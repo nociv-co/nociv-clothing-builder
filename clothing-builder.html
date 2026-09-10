@@ -1,0 +1,1085 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NOCIV // Clothing Pattern Builder</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter & JetBrains Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-paper: #F4F3EF;
+            --bg-dark: #121212;
+            --line-grid: #E0DDD5;
+            --ink-black: #0F0F0F;
+            --accent-orange: #FF4500;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-paper);
+            color: var(--ink-black);
+            overflow-x: hidden;
+        }
+
+        .font-mono-code {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* Tactile Grid Canvas Background */
+        .canvas-grid {
+            background-color: #F8F7F2;
+            background-image: 
+                linear-gradient(to right, rgba(0,0,0,0.06) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(0,0,0,0.06) 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+
+        /* Raw Industrial Card & Border Aesthetics */
+        .nociv-border {
+            border: 2px solid var(--ink-black);
+        }
+
+        .nociv-shadow {
+            box-shadow: 4px 4px 0px 0px rgba(15, 15, 15, 1);
+        }
+
+        .nociv-shadow-sm {
+            box-shadow: 2px 2px 0px 0px rgba(15, 15, 15, 1);
+        }
+
+        .nociv-button {
+            border: 2px solid var(--ink-black);
+            background-color: #FFFFFF;
+            font-weight: 700;
+            text-transform: uppercase;
+            transition: all 0.1s ease;
+        }
+
+        .nociv-button:hover {
+            background-color: var(--ink-black);
+            color: #FFFFFF;
+            transform: translate(-1px, -1px);
+            box-shadow: 3px 3px 0px 0px rgba(15, 15, 15, 1);
+        }
+
+        .nociv-button:active {
+            transform: translate(1px, 1px);
+            box-shadow: 1px 1px 0px 0px rgba(15, 15, 15, 1);
+        }
+
+        /* Custom Range Slider Styling */
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+
+        input[type=range]:focus {
+            outline: none;
+        }
+
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 6px;
+            cursor: pointer;
+            background: #D8D5CB;
+            border: 1px solid var(--ink-black);
+        }
+
+        input[type=range]::-webkit-slider-thumb {
+            height: 18px;
+            width: 18px;
+            background: var(--ink-black);
+            cursor: pointer;
+            -webkit-appearance: none;
+            margin-top: -7px;
+            border-radius: 0px;
+            border: 1px solid #FFFFFF;
+            box-shadow: 2px 2px 0px 0px rgba(0,0,0,0.5);
+        }
+
+        /* Printable Mode CSS (Hides Controls & Renders Tiled Pages for PDF) */
+        @media print {
+            body {
+                background: white !important;
+                color: black !important;
+            }
+
+            #app-container, #print-modal-backdrop {
+                display: none !important;
+            }
+
+            #print-output-container {
+                display: block !important;
+            }
+
+            .print-page {
+                page-break-after: always;
+                break-after: page;
+                width: 8.5in;
+                height: 11in;
+                padding: 0.5in;
+                box-sizing: border-box;
+                position: relative;
+                background: white;
+                border: 1px dashed #CCC;
+                margin: 0 auto;
+            }
+        }
+
+        #print-output-container {
+            display: none;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <!-- Application Top Navigation Bar -->
+    <header class="nociv-border bg-white p-3 md:p-4 flex flex-wrap items-center justify-between z-20 gap-3 border-b-4 border-black">
+        <div class="flex items-center space-x-3">
+            <a href="https://nociv.co" target="_blank" class="bg-black text-white px-3 py-1 font-mono-code font-bold text-lg tracking-wider hover:bg-orange-600 transition-colors">
+                NOCIV //
+            </a>
+            <div>
+                <h1 class="text-xl md:text-2xl font-extrabold tracking-tight uppercase leading-none">Clothing Builder</h1>
+                <p class="text-xs font-mono-code text-gray-600 uppercase tracking-widest mt-0.5">Parametric 2D Sewing Engine v1.0</p>
+            </div>
+        </div>
+
+        <!-- Header Motto & Direct Actions -->
+        <div class="flex items-center space-x-2 md:space-x-4">
+            <span class="hidden lg:inline-block font-mono-code text-xs font-bold border-2 border-black bg-yellow-300 px-2 py-1">
+                BUY • BUILD • SHARE
+            </span>
+            <button onclick="resetDefaults()" class="nociv-button text-xs px-3 py-1.5 font-mono-code">
+                Reset Specs
+            </button>
+            <button onclick="openPrintModal()" class="nociv-button bg-black text-white text-xs px-4 py-1.5 font-mono-code hover:bg-orange-600">
+                🖨️ Export Printable Pattern
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Application Split Layout -->
+    <div id="app-container" class="flex-1 flex flex-col lg:flex-row overflow-hidden relative">
+
+        <!-- LEFT SIDEBAR: Controls & Measurements -->
+        <aside class="w-full lg:w-96 bg-[#FAF9F5] nociv-border border-r-2 border-l-0 border-t-0 border-b-0 p-4 overflow-y-auto flex-shrink-0 z-10 max-h-[50vh] lg:max-h-none shadow-lg">
+            
+            <!-- 1. Garment Base Type Selector -->
+            <div class="mb-6">
+                <label class="block font-mono-code text-xs font-bold uppercase tracking-wider mb-2 text-gray-700">
+                    1. Base Garment Template
+                </label>
+                <div class="grid grid-cols-1 gap-2">
+                    <button onclick="selectGarment('muscle_tank')" id="btn-muscle_tank" class="garment-type-btn nociv-button text-left p-2.5 text-xs flex justify-between items-center bg-black text-white">
+                        <span class="font-bold">BOXY MUSCLE TANK</span>
+                        <span class="font-mono-code text-[10px] opacity-80">RAW EDGE</span>
+                    </button>
+                    <button onclick="selectGarment('cutoff_tee')" id="btn-cutoff_tee" class="garment-type-btn nociv-button text-left p-2.5 text-xs flex justify-between items-center">
+                        <span class="font-bold">OVERSIZED CUTOFF TEE</span>
+                        <span class="font-mono-code text-[10px] opacity-80">DROP SHOULDER</span>
+                    </button>
+                    <button onclick="selectGarment('cropped_top')" id="btn-cropped_top" class="garment-type-btn nociv-button text-left p-2.5 text-xs flex justify-between items-center">
+                        <span class="font-bold">CROPPED MUSCLE TOP</span>
+                        <span class="font-mono-code text-[10px] opacity-80">HIGH CROPPED</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Quick Size Preset Selector -->
+            <div class="mb-6 bg-white p-3 nociv-border nociv-shadow-sm">
+                <label class="block font-mono-code text-[11px] font-bold uppercase mb-2">
+                    Size Preset Quick-Load
+                </label>
+                <div class="grid grid-cols-4 gap-1 font-mono-code text-xs">
+                    <button onclick="applyPreset('S')" class="nociv-button py-1 text-center">S</button>
+                    <button onclick="applyPreset('M')" class="nociv-button py-1 text-center bg-gray-100">M</button>
+                    <button onclick="applyPreset('L')" class="nociv-button py-1 text-center">L</button>
+                    <button onclick="applyPreset('XL')" class="nociv-button py-1 text-center">XL</button>
+                </div>
+            </div>
+
+            <!-- 2. Interactive Measurement Sliders -->
+            <div class="mb-6 border-t-2 border-black pt-4">
+                <div class="flex justify-between items-center mb-3">
+                    <label class="font-mono-code text-xs font-bold uppercase tracking-wider text-gray-700">
+                        2. Garment Dimensions (Inches)
+                    </label>
+                    <span class="text-[10px] font-mono-code bg-black text-white px-1.5 py-0.5">FLAT MEASURE</span>
+                </div>
+
+                <div class="space-y-4 font-mono-code text-xs">
+                    <!-- Chest Width -->
+                    <div>
+                        <div class="flex justify-between mb-1">
+                            <span>Chest Width (Flat):</span>
+                            <span id="val-chestWidth" class="font-bold text-orange-600">22.0"</span>
+                        </div>
+                        <input type="range" id="slider-chestWidth" min="16" max="30" step="0.5" value="22" oninput="updateParam('chestWidth', this.value)">
+                    </div>
+
+                    <!-- Garment Length -->
+                    <div>
+                        <div class="flex justify-between mb-1">
+                            <span>Total Length:</span>
+                            <span id="val-garmentLength" class="font-bold text-orange-600">28.0"</span>
+                        </div>
+                        <input type="range" id="slider-garmentLength" min="18" max="36" step="0.5" value="28" oninput="updateParam('garmentLength', this.value)">
+                    </div>
+
+                    <!-- Armhole Drop -->
+                    <div>
+                        <div class="flex justify-between mb-1">
+                            <span>Armhole Drop / Curve:</span>
+                            <span id="val-armholeDrop" class="font-bold text-orange-600">11.0"</span>
+                        </div>
+                        <input type="range" id="slider-armholeDrop" min="7" max="17" step="0.5" value="11" oninput="updateParam('armholeDrop', this.value)">
+                    </div>
+
+                    <!-- Neck Opening Width -->
+                    <div>
+                        <div class="flex justify-between mb-1">
+                            <span>Neck Opening Width:</span>
+                            <span id="val-neckWidth" class="font-bold text-orange-600">8.0"</span>
+                        </div>
+                        <input type="range" id="slider-neckWidth" min="5" max="12" step="0.25" value="8" oninput="updateParam('neckWidth', this.value)">
+                    </div>
+
+                    <!-- Front Neck Drop -->
+                    <div>
+                        <div class="flex justify-between mb-1">
+                            <span>Front Neck Depth:</span>
+                            <span id="val-neckDepthFront" class="font-bold text-orange-600">4.5"</span>
+                        </div>
+                        <input type="range" id="slider-neckDepthFront" min="2" max="9" step="0.25" value="4.5" oninput="updateParam('neckDepthFront', this.value)">
+                    </div>
+
+                    <!-- Shoulder Slant -->
+                    <div>
+                        <div class="flex justify-between mb-1">
+                            <span>Shoulder Drop / Slant:</span>
+                            <span id="val-shoulderSlant" class="font-bold text-orange-600">1.25"</span>
+                        </div>
+                        <input type="range" id="slider-shoulderSlant" min="0.5" max="3" step="0.25" value="1.25" oninput="updateParam('shoulderSlant', this.value)">
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. Modular Feature Toggles -->
+            <div class="mb-6 border-t-2 border-black pt-4">
+                <label class="block font-mono-code text-xs font-bold uppercase tracking-wider mb-3 text-gray-700">
+                    3. Modular Features & Overlays
+                </label>
+
+                <div class="space-y-3 font-mono-code text-xs">
+                    <!-- Front Patch Pocket Toggle -->
+                    <div class="bg-white p-2.5 nociv-border flex flex-col gap-2">
+                        <label class="flex items-center space-x-2 cursor-pointer font-bold">
+                            <input type="checkbox" id="toggle-pocket" checked onchange="updateToggle('hasPocket', this.checked)" class="w-4 h-4 accent-black">
+                            <span>ADD FRONT PATCH POCKET</span>
+                        </label>
+                        <div id="pocket-controls" class="pl-6 pt-1 space-y-2 border-t border-gray-200 mt-1">
+                            <div class="flex justify-between">
+                                <span>Pocket Size:</span>
+                                <span id="val-pocketSize" class="font-bold">5.0" x 5.5"</span>
+                            </div>
+                            <input type="range" id="slider-pocketSize" min="3.5" max="7" step="0.25" value="5" oninput="updateParam('pocketSize', this.value)">
+                        </div>
+                    </div>
+
+                    <!-- Seam Allowance Toggle -->
+                    <div class="bg-white p-2.5 nociv-border flex items-center justify-between">
+                        <label class="flex items-center space-x-2 cursor-pointer font-bold">
+                            <input type="checkbox" id="toggle-seam" checked onchange="updateToggle('showSeamAllowance', this.checked)" class="w-4 h-4 accent-black">
+                            <span>1/2" (0.5 in) SEAM ALLOWANCE</span>
+                        </label>
+                    </div>
+
+                    <!-- Side Hem Slit Toggle -->
+                    <div class="bg-white p-2.5 nociv-border flex items-center justify-between">
+                        <label class="flex items-center space-x-2 cursor-pointer font-bold">
+                            <input type="checkbox" id="toggle-hem-slit" onchange="updateToggle('hasHemSlit', this.checked)" class="w-4 h-4 accent-black">
+                            <span>ADD SIDE HEM SLIT (2.5")</span>
+                        </label>
+                    </div>
+
+                    <!-- Dimension Overlay Toggle -->
+                    <div class="bg-white p-2.5 nociv-border flex items-center justify-between">
+                        <label class="flex items-center space-x-2 cursor-pointer font-bold">
+                            <input type="checkbox" id="toggle-labels" checked onchange="updateToggle('showLabels', this.checked)" class="w-4 h-4 accent-black">
+                            <span>DRAW MEASUREMENT LABELS</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Export Buttons in Sidebar -->
+            <div class="space-y-2 border-t-2 border-black pt-4">
+                <button onclick="downloadSVG()" class="w-full nociv-button py-2 text-xs font-mono-code flex items-center justify-center space-x-2">
+                    <span>⬇️ DOWNLOAD RAW SVG (1:1 CAD)</span>
+                </button>
+                <button onclick="downloadTechPack()" class="w-full nociv-button py-2 text-xs font-mono-code flex items-center justify-center space-x-2 bg-gray-100">
+                    <span>📋 SAVE TECH PACK (JSON)</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- RIGHT CENTER: Interactive Canvas Viewport -->
+        <main class="flex-1 flex flex-col relative canvas-grid overflow-hidden">
+            
+            <!-- Floating Canvas Toolbar -->
+            <div class="absolute top-4 left-4 z-10 flex flex-wrap gap-2">
+                <div class="bg-white nociv-border nociv-shadow-sm p-1.5 flex items-center space-x-1 text-xs font-mono-code">
+                    <button onclick="adjustZoom(0.1)" class="px-2 py-0.5 bg-gray-100 hover:bg-black hover:text-white font-bold border border-black">+</button>
+                    <button onclick="adjustZoom(-0.1)" class="px-2 py-0.5 bg-gray-100 hover:bg-black hover:text-white font-bold border border-black">-</button>
+                    <button onclick="resetZoom()" class="px-2 py-0.5 bg-gray-100 hover:bg-black hover:text-white border border-black text-[10px]">FIT CANVAS</button>
+                    <span id="zoom-readout" class="px-2 font-bold text-gray-700">100%</span>
+                </div>
+
+                <!-- Pattern Piece View Filter Buttons -->
+                <div class="bg-white nociv-border nociv-shadow-sm p-1 flex items-center space-x-1 text-xs font-mono-code">
+                    <button onclick="setViewFilter('all')" id="view-btn-all" class="px-2 py-0.5 bg-black text-white font-bold border border-black">ALL PIECES</button>
+                    <button onclick="setViewFilter('front')" id="view-btn-front" class="px-2 py-0.5 bg-gray-100 hover:bg-black hover:text-white border border-black">FRONT</button>
+                    <button onclick="setViewFilter('back')" id="view-btn-back" class="px-2 py-0.5 bg-gray-100 hover:bg-black hover:text-white border border-black">BACK</button>
+                </div>
+            </div>
+
+            <!-- Top Right: Scale Calibration Box Warning -->
+            <div class="absolute top-4 right-4 z-10 hidden md:block">
+                <div class="bg-white nociv-border p-2.5 text-[11px] font-mono-code nociv-shadow-sm max-w-xs">
+                    <div class="flex items-center space-x-2 mb-1">
+                        <div class="w-4 h-4 border border-black bg-yellow-300 flex items-center justify-center font-bold text-[9px]">1"</div>
+                        <span class="font-bold">SCALE VERIFICATION</span>
+                    </div>
+                    <p class="text-[10px] text-gray-600 leading-tight">
+                        Check the 1" x 1" box when printed to ensure 100% true-to-size cutting.
+                    </p>
+                </div>
+            </div>
+
+            <!-- SVG CAD Viewport Container -->
+            <div id="svg-container" class="flex-1 w-full h-full flex items-center justify-center p-6 overflow-auto cursor-grab active:cursor-grabbing">
+                <svg id="pattern-svg" xmlns="http://www.w3.org/2000/svg" class="max-w-none transition-transform duration-75 origin-center">
+                    <!-- Dynamic SVG content drafted via JavaScript -->
+                </svg>
+            </div>
+
+            <!-- Bottom Status Bar -->
+            <div class="bg-white nociv-border border-l-0 border-r-0 border-b-0 p-2 px-4 flex justify-between items-center text-xs font-mono-code text-gray-700 z-10">
+                <div class="flex items-center space-x-4">
+                    <span class="flex items-center space-x-1">
+                        <span class="w-2.5 h-2.5 bg-black inline-block"></span>
+                        <span>CUT LINE</span>
+                    </span>
+                    <span class="flex items-center space-x-1">
+                        <span class="w-2.5 h-0.5 border-t border-dashed border-red-600 inline-block"></span>
+                        <span>SEAM LINE</span>
+                    </span>
+                    <span class="flex items-center space-x-1">
+                        <span class="w-2.5 h-0.5 border-t-2 border-dotted border-blue-600 inline-block"></span>
+                        <span>FOLD LINE</span>
+                    </span>
+                </div>
+                <div>
+                    <span>UNITS: INCHES (IN)</span>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- PRINT PREVIEW MODAL BACKDROP -->
+    <div id="print-modal-backdrop" class="fixed inset-0 bg-black bg-opacity-75 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white nociv-border max-w-4xl w-full max-h-[90vh] flex flex-col nociv-shadow">
+            
+            <!-- Modal Header -->
+            <div class="bg-black text-white p-4 flex justify-between items-center">
+                <div>
+                    <h2 class="text-lg font-bold font-mono-code">PRINTABLE TILE ENGINE (8.5" x 11")</h2>
+                    <p class="text-xs text-gray-300 font-mono-code">Home Printer Tiling Layout with Crosshairs & Alignment Marks</p>
+                </div>
+                <button onclick="closePrintModal()" class="text-white text-xl font-bold px-2 hover:text-orange-500">✕</button>
+            </div>
+
+            <!-- Modal Content & Tiling Preview -->
+            <div class="p-6 overflow-y-auto flex-1 bg-gray-100 space-y-6">
+                
+                <!-- Print Instructions Box -->
+                <div class="bg-yellow-100 border-2 border-black p-4 text-xs font-mono-code space-y-2">
+                    <h3 class="font-bold uppercase text-sm">💡 PRINTING INSTRUCTIONS FOR ACCURATE FIT:</h3>
+                    <ol class="list-decimal pl-4 space-y-1 text-gray-800">
+                        <li>Set your printer scale to <strong>100% (Do NOT "Fit to Page")</strong>.</li>
+                        <li>Measure the <strong>1" Scale Calibration Square</strong> on Tile A1 after printing.</li>
+                        <li>Trim paper along the border grid lines and tape pages together matching tile coordinates (e.g., A1 to A2).</li>
+                        <li>Cut out fabric along the solid outer cut line (0.5" seam allowance included).</li>
+                    </ol>
+                </div>
+
+                <div id="tiling-summary-info" class="font-mono-code text-xs font-bold text-gray-700">
+                    <!-- Calculated page tiles count inserted here -->
+                </div>
+
+                <!-- Scrollable Page Tile Cards Grid Preview -->
+                <div id="modal-tiles-preview" class="grid grid-cols-1 md:grid-cols-2 gap-4 justify-items-center">
+                    <!-- Mini previews generated via JS -->
+                </div>
+            </div>
+
+            <!-- Modal Footer Actions -->
+            <div class="p-4 border-t-2 border-black bg-white flex justify-between items-center">
+                <button onclick="closePrintModal()" class="nociv-button px-4 py-2 text-xs font-mono-code">
+                    Cancel
+                </button>
+                <button onclick="triggerBrowserPrint()" class="nociv-button bg-black text-white px-6 py-2 text-xs font-mono-code hover:bg-orange-600">
+                    🖨️ PRINT ALL PAGES NOW
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden Output Div populated only during window.print() -->
+    <div id="print-output-container"></div>
+
+    <script>
+        // Default State for Parametric Garment Engine
+        const state = {
+            garmentType: 'muscle_tank', // 'muscle_tank', 'cutoff_tee', 'cropped_top'
+            params: {
+                chestWidth: 22.0,       // Flat chest width in inches
+                garmentLength: 28.0,    // Total length in inches
+                armholeDrop: 11.0,      // Vertical armhole curve depth
+                neckWidth: 8.0,         // Total neck opening width
+                neckDepthFront: 4.5,    // Front neck drop depth
+                neckDepthBack: 1.5,     // Back neck drop depth
+                shoulderSlant: 1.25,    // Shoulder drop angle in inches
+                shoulderWidth: 17.5,    // Cross-shoulder span
+                pocketSize: 5.0         // Square pocket dimensions
+            },
+            toggles: {
+                hasPocket: true,
+                showSeamAllowance: true,
+                hasHemSlit: false,
+                showLabels: true
+            },
+            viewFilter: 'all',          // 'all', 'front', 'back'
+            zoom: 1.0,                  // Visual zoom level
+            ppi: 18                     // Screen pixels per inch scale factor for canvas
+        };
+
+        // Standard Preset Sizes Dictionary
+        const presets = {
+            'S':  { chestWidth: 19.0, garmentLength: 26.0, armholeDrop: 9.5,  neckWidth: 7.0, neckDepthFront: 4.0, shoulderWidth: 15.5 },
+            'M':  { chestWidth: 21.0, garmentLength: 27.5, armholeDrop: 10.5, neckWidth: 7.5, neckDepthFront: 4.25, shoulderWidth: 16.5 },
+            'L':  { chestWidth: 23.0, garmentLength: 29.0, armholeDrop: 11.5, neckWidth: 8.0, neckDepthFront: 4.5, shoulderWidth: 18.0 },
+            'XL': { chestWidth: 25.5, garmentLength: 30.5, armholeDrop: 12.5, neckWidth: 8.5, neckDepthFront: 5.0, shoulderWidth: 19.5 }
+        };
+
+        window.onload = function() {
+            renderPattern();
+            window.addEventListener('resize', renderPattern);
+        };
+
+        function selectGarment(type) {
+            state.garmentType = type;
+            
+            // Adjust default sliders based on garment base
+            if (type === 'cropped_top') {
+                state.params.garmentLength = 20.0;
+                state.params.armholeDrop = 12.0;
+            } else if (type === 'cutoff_tee') {
+                state.params.shoulderWidth = state.params.chestWidth * 0.95;
+                state.params.armholeDrop = 11.5;
+            } else {
+                state.params.garmentLength = 28.0;
+                state.params.shoulderWidth = 17.5;
+            }
+
+            // Update UI buttons styling
+            document.querySelectorAll('.garment-type-btn').forEach(btn => {
+                btn.classList.remove('bg-black', 'text-white');
+            });
+            const activeBtn = document.getElementById(`btn-${type}`);
+            if (activeBtn) activeBtn.classList.add('bg-black', 'text-white');
+
+            syncSliderUI();
+            renderPattern();
+        }
+
+        function applyPreset(sizeKey) {
+            if (presets[sizeKey]) {
+                Object.assign(state.params, presets[sizeKey]);
+                syncSliderUI();
+                renderPattern();
+            }
+        }
+
+        function updateParam(key, value) {
+            state.params[key] = parseFloat(value);
+            const readout = document.getElementById(`val-${key}`);
+            if (readout) {
+                if (key === 'pocketSize') {
+                    readout.textContent = `${state.params[key].toFixed(1)}" x ${(state.params[key] * 1.1).toFixed(1)}"`;
+                } else {
+                    readout.textContent = `${state.params[key].toFixed(1)}"`;
+                }
+            }
+            renderPattern();
+        }
+
+        function updateToggle(key, checked) {
+            state.toggles[key] = checked;
+            if (key === 'hasPocket') {
+                const pControls = document.getElementById('pocket-controls');
+                if (pControls) pControls.style.display = checked ? 'block' : 'none';
+            }
+            renderPattern();
+        }
+
+        function syncSliderUI() {
+            for (let key in state.params) {
+                const slider = document.getElementById(`slider-${key}`);
+                const readout = document.getElementById(`val-${key}`);
+                if (slider) slider.value = state.params[key];
+                if (readout) {
+                    if (key === 'pocketSize') {
+                        readout.textContent = `${state.params[key].toFixed(1)}" x ${(state.params[key] * 1.1).toFixed(1)}"`;
+                    } else {
+                        readout.textContent = `${state.params[key].toFixed(1)}"`;
+                    }
+                }
+            }
+        }
+
+        function resetDefaults() {
+            state.params = {
+                chestWidth: 22.0,
+                garmentLength: 28.0,
+                armholeDrop: 11.0,
+                neckWidth: 8.0,
+                neckDepthFront: 4.5,
+                neckDepthBack: 1.5,
+                shoulderSlant: 1.25,
+                shoulderWidth: 17.5,
+                pocketSize: 5.0
+            };
+            syncSliderUI();
+            renderPattern();
+        }
+
+        function renderPattern() {
+            const svg = document.getElementById('pattern-svg');
+            svg.innerHTML = ''; // Clear canvas
+
+            const ppi = state.ppi;
+            const p = state.params;
+            const sa = state.toggles.showSeamAllowance ? 0.5 : 0; // 0.5 inch seam allowance
+
+            // Garment half-widths for drafting on fold (X=0 is Fold line)
+            const halfChest = p.chestWidth / 2;
+            const halfNeck = p.neckWidth / 2;
+            const halfShoulder = Math.min(p.shoulderWidth / 2, halfChest);
+
+            // Spacing offsets for multi-piece layout
+            const pieceGap = 4.0; // 4 inches gap between pieces
+            
+            let frontOffsetX = 2.0;
+            let backOffsetX = frontOffsetX + halfChest + pieceGap;
+            let pocketOffsetX = backOffsetX + halfChest + pieceGap;
+
+            // Visibility Filter offsets
+            if (state.viewFilter === 'front') {
+                backOffsetX = -9999;
+                pocketOffsetX = -9999;
+            } else if (state.viewFilter === 'back') {
+                frontOffsetX = -9999;
+                backOffsetX = 2.0;
+                pocketOffsetX = -9999;
+            }
+
+            // Total SVG ViewBox Dimensions
+            const totalWidthInches = (state.viewFilter === 'all') ? (halfChest * 2 + pieceGap * 2 + 10) : (halfChest + 8);
+            const totalHeightInches = p.garmentLength + 6;
+
+            svg.setAttribute('width', (totalWidthInches * ppi * state.zoom));
+            svg.setAttribute('height', (totalHeightInches * ppi * state.zoom));
+            svg.setAttribute('viewBox', `0 0 ${totalWidthInches * ppi} ${totalHeightInches * ppi}`);
+
+            // Group for main pattern content
+            const mainGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+
+            // --- 1. RENDER FRONT PATTERN PIECE ---
+            if (frontOffsetX > 0) {
+                const frontGroup = drawGarmentPiece({
+                    title: 'FRONT PIECE',
+                    subtext: 'CUT 1 ON FOLD',
+                    offsetX: frontOffsetX,
+                    offsetY: 3.0,
+                    halfChest,
+                    halfNeck,
+                    halfShoulder,
+                    garmentLength: p.garmentLength,
+                    neckDepth: p.neckDepthFront,
+                    armholeDrop: p.armholeDrop,
+                    shoulderSlant: p.shoulderSlant,
+                    seamAllowance: sa,
+                    isFront: true
+                });
+                mainGroup.appendChild(frontGroup);
+            }
+
+            // --- 2. RENDER BACK PATTERN PIECE ---
+            if (backOffsetX > 0) {
+                const backGroup = drawGarmentPiece({
+                    title: 'BACK PIECE',
+                    subtext: 'CUT 1 ON FOLD',
+                    offsetX: backOffsetX,
+                    offsetY: 3.0,
+                    halfChest,
+                    halfNeck,
+                    halfShoulder,
+                    garmentLength: p.garmentLength,
+                    neckDepth: p.neckDepthBack,
+                    armholeDrop: p.armholeDrop,
+                    shoulderSlant: p.shoulderSlant,
+                    seamAllowance: sa,
+                    isFront: false
+                });
+                mainGroup.appendChild(backGroup);
+            }
+
+            // --- 3. RENDER FRONT PATCH POCKET (IF ENABLED) ---
+            if (state.toggles.hasPocket && pocketOffsetX > 0) {
+                const pocketGroup = drawPocketPiece({
+                    offsetX: pocketOffsetX,
+                    offsetY: 3.0,
+                    size: p.pocketSize,
+                    seamAllowance: sa
+                });
+                mainGroup.appendChild(pocketGroup);
+            }
+
+            // --- 4. RENDER 1" SCALE VERIFICATION BOX ---
+            const scaleBox = drawScaleCalibrationBox(2.0, totalHeightInches - 2.5);
+            mainGroup.appendChild(scaleBox);
+
+            svg.appendChild(mainGroup);
+        }
+
+        function drawGarmentPiece(opts) {
+            const ppi = state.ppi;
+            const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            g.setAttribute('transform', `translate(${opts.offsetX * ppi}, ${opts.offsetY * ppi})`);
+
+            // Key Pattern Nodes (Inches)
+            const pFoldNeck = { x: 0, y: opts.neckDepth };
+            const pShoulderNeck = { x: opts.halfNeck, y: 0 };
+            const pShoulderOuter = { x: opts.halfShoulder, y: opts.shoulderSlant };
+            const pArmholeBottom = { x: opts.halfChest, y: opts.armholeDrop };
+            const pHemOuter = { x: opts.halfChest, y: opts.garmentLength };
+            const pHemFold = { x: 0, y: opts.garmentLength };
+
+            // Control points for armhole scoop curve
+            const armholeControl = { 
+                x: opts.halfShoulder * 0.7, 
+                y: opts.armholeDrop * 0.65 
+            };
+
+            // Control point for neckline curve
+            const neckControl = { x: 0, y: 0 };
+
+            // 1. SEWING / NET PATTERN PATH (Dashed or Solid Inner)
+            const netPathD = `
+                M ${pFoldNeck.x * ppi} ${pFoldNeck.y * ppi}
+                Q ${neckControl.x * ppi} ${neckControl.y * ppi} ${pShoulderNeck.x * ppi} ${pShoulderNeck.y * ppi}
+                L ${pShoulderOuter.x * ppi} ${pShoulderOuter.y * ppi}
+                Q ${armholeControl.x * ppi} ${armholeControl.y * ppi} ${pArmholeBottom.x * ppi} ${pArmholeBottom.y * ppi}
+                L ${pHemOuter.x * ppi} ${pHemOuter.y * ppi}
+                L ${pHemFold.x * ppi} ${pHemFold.y * ppi}
+                Z
+            `;
+
+            const netPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            netPath.setAttribute('d', netPathD);
+            netPath.setAttribute('fill', '#FFFFFF');
+            netPath.setAttribute('fill-opacity', '0.7');
+            netPath.setAttribute('stroke', opts.seamAllowance > 0 ? '#DC2626' : '#0F0F0F'); // Red if seam allowance shown
+            netPath.setAttribute('stroke-width', opts.seamAllowance > 0 ? '1.5' : '2.5');
+            if (opts.seamAllowance > 0) netPath.setAttribute('stroke-dasharray', '4 3');
+            g.appendChild(netPath);
+
+            // 2. OUTER CUT LINE (WITH SEAM ALLOWANCE OFFSET)
+            if (opts.seamAllowance > 0) {
+                const sa = opts.seamAllowance;
+                // Offset outer nodes (Except Center Fold line x=0)
+                const oFoldNeck = { x: 0, y: opts.neckDepth - sa };
+                const oShoulderNeck = { x: opts.halfNeck, y: -sa };
+                const oShoulderOuter = { x: opts.halfShoulder + sa, y: opts.shoulderSlant - sa };
+                const oArmholeBottom = { x: opts.halfChest + sa, y: opts.armholeDrop };
+                const oHemOuter = { x: opts.halfChest + sa, y: opts.garmentLength + sa };
+                const oHemFold = { x: 0, y: opts.garmentLength + sa };
+
+                const cutPathD = `
+                    M ${oFoldNeck.x * ppi} ${oFoldNeck.y * ppi}
+                    Q ${neckControl.x * ppi} ${(neckControl.y - sa) * ppi} ${oShoulderNeck.x * ppi} ${oShoulderNeck.y * ppi}
+                    L ${oShoulderOuter.x * ppi} ${oShoulderOuter.y * ppi}
+                    Q ${(armholeControl.x + sa) * ppi} ${armholeControl.y * ppi} ${oArmholeBottom.x * ppi} ${oArmholeBottom.y * ppi}
+                    L ${oHemOuter.x * ppi} ${oHemOuter.y * ppi}
+                    L ${oHemFold.x * ppi} ${oHemFold.y * ppi}
+                    Z
+                `;
+
+                const cutPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                cutPath.setAttribute('d', cutPathD);
+                cutPath.setAttribute('fill', 'none');
+                cutPath.setAttribute('stroke', '#0F0F0F');
+                cutPath.setAttribute('stroke-width', '2.5');
+                g.appendChild(cutPath);
+            }
+
+            // 3. CENTER FOLD LINE INDICATOR (Dotted Blue Line on X=0)
+            const foldLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            foldLine.setAttribute('x1', '0');
+            foldLine.setAttribute('y1', `${opts.neckDepth * ppi}`);
+            foldLine.setAttribute('x2', '0');
+            foldLine.setAttribute('y2', `${opts.garmentLength * ppi}`);
+            foldLine.setAttribute('stroke', '#2563EB');
+            foldLine.setAttribute('stroke-width', '3');
+            foldLine.setAttribute('stroke-dasharray', '2 4');
+            g.appendChild(foldLine);
+
+            // "PLACE ON FOLD" Double Arrow Motif
+            const foldTextGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            foldTextGroup.innerHTML = `
+                <text x="12" y="${(opts.garmentLength / 2) * ppi}" font-family="JetBrains Mono" font-size="11" font-weight="700" fill="#2563EB" transform="rotate(-90 12 ${(opts.garmentLength / 2) * ppi})">
+                    ◀ ━━ CENTER FOLD LINE (DO NOT CUT) ━━ ▶
+                </text>
+            `;
+            g.appendChild(foldTextGroup);
+
+            // 4. PIECE IDENTIFICATION TEXT BLOCK
+            const infoText = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            const centerX = (opts.halfChest / 2) * ppi;
+            const centerY = (opts.garmentLength * 0.4) * ppi;
+            infoText.innerHTML = `
+                <text x="${centerX}" y="${centerY}" font-family="Inter" font-weight="900" font-size="16" fill="#0F0F0F" text-anchor="middle" letter-spacing="1">
+                    ${opts.title}
+                </text>
+                <text x="${centerX}" y="${centerY + 18}" font-family="JetBrains Mono" font-weight="700" font-size="11" fill="#DC2626" text-anchor="middle">
+                    ${opts.subtext}
+                </text>
+                <text x="${centerX}" y="${centerY + 34}" font-family="JetBrains Mono" font-size="10" fill="#666666" text-anchor="middle">
+                    NOCIV // ${state.garmentType.toUpperCase()}
+                </text>
+                <text x="${centerX}" y="${centerY + 48}" font-family="JetBrains Mono" font-size="9" fill="#888888" text-anchor="middle">
+                    CHEST: ${(opts.halfChest * 2).toFixed(1)}" | LENGTH: ${opts.garmentLength.toFixed(1)}"
+                </text>
+            `;
+            g.appendChild(infoText);
+
+            // 5. MEASUREMENT LABELS OVERLAY (IF ENABLED)
+            if (state.toggles.showLabels) {
+                const labelGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                
+                // Top Chest Width Dimension Line
+                const chestY = (opts.garmentLength + 0.8) * ppi;
+                labelGroup.innerHTML += `
+                    <line x1="0" y1="${chestY}" x2="${opts.halfChest * ppi}" y2="${chestY}" stroke="#0F0F0F" stroke-width="1" />
+                    <circle cx="0" cy="${chestY}" r="2" fill="#0F0F0F"/>
+                    <circle cx="${opts.halfChest * ppi}" cy="${chestY}" r="2" fill="#0F0F0F"/>
+                    <text x="${(opts.halfChest / 2) * ppi}" y="${chestY + 14}" font-family="JetBrains Mono" font-size="10" font-weight="700" fill="#0F0F0F" text-anchor="middle">
+                        HALF CHEST: ${opts.halfChest.toFixed(1)}"
+                    </text>
+                `;
+                g.appendChild(labelGroup);
+            }
+
+            return g;
+        }
+
+        function drawPocketPiece(opts) {
+            const ppi = state.ppi;
+            const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            g.setAttribute('transform', `translate(${opts.offsetX * ppi}, ${opts.offsetY * ppi})`);
+
+            const w = opts.size;
+            const h = opts.size * 1.1; // Slightly taller than wide
+            const sa = opts.seamAllowance;
+
+            // Main Net Pocket Path
+            const pocketPath = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+            pocketPath.setAttribute('x', '0');
+            pocketPath.setAttribute('y', '0');
+            pocketPath.setAttribute('width', `${w * ppi}`);
+            pocketPath.setAttribute('height', `${h * ppi}`);
+            pocketPath.setAttribute('fill', '#FFFFFF');
+            pocketPath.setAttribute('stroke', sa > 0 ? '#DC2626' : '#0F0F0F');
+            pocketPath.setAttribute('stroke-width', sa > 0 ? '1.5' : '2.5');
+            if (sa > 0) pocketPath.setAttribute('stroke-dasharray', '4 3');
+            g.appendChild(pocketPath);
+
+            // Outer Seam Allowance Line
+            if (sa > 0) {
+                const outerRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                outerRect.setAttribute('x', `${-sa * ppi}`);
+                outerRect.setAttribute('y', `${-sa * ppi}`);
+                outerRect.setAttribute('width', `${(w + sa * 2) * ppi}`);
+                outerRect.setAttribute('height', `${(h + sa * 2) * ppi}`);
+                outerRect.setAttribute('fill', 'none');
+                outerRect.setAttribute('stroke', '#0F0F0F');
+                outerRect.setAttribute('stroke-width', '2.5');
+                g.appendChild(outerRect);
+            }
+
+            // Text Label
+            const textGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            textGroup.innerHTML = `
+                <text x="${(w / 2) * ppi}" y="${(h / 2) * ppi - 5}" font-family="Inter" font-weight="900" font-size="12" fill="#0F0F0F" text-anchor="middle">
+                    FRONT POCKET
+                </text>
+                <text x="${(w / 2) * ppi}" y="${(h / 2) * ppi + 12}" font-family="JetBrains Mono" font-weight="700" font-size="10" fill="#DC2626" text-anchor="middle">
+                    CUT 1 FABRIC
+                </text>
+                <text x="${(w / 2) * ppi}" y="${(h / 2) * ppi + 26}" font-family="JetBrains Mono" font-size="9" fill="#666666" text-anchor="middle">
+                    ${w.toFixed(1)}" x ${h.toFixed(1)}"
+                </text>
+            `;
+            g.appendChild(textGroup);
+
+            return g;
+        }
+
+        function drawScaleCalibrationBox(xInches, yInches) {
+            const ppi = state.ppi;
+            const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            g.setAttribute('transform', `translate(${xInches * ppi}, ${yInches * ppi})`);
+
+            // 1" x 1" Square Box
+            const box = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+            box.setAttribute('x', '0');
+            box.setAttribute('y', '0');
+            box.setAttribute('width', `${1.0 * ppi}`);
+            box.setAttribute('height', `${1.0 * ppi}`);
+            box.setAttribute('fill', '#FEF08A');
+            box.setAttribute('stroke', '#0F0F0F');
+            box.setAttribute('stroke-width', '2');
+            g.appendChild(box);
+
+            const text = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            text.innerHTML = `
+                <text x="${0.5 * ppi}" y="${0.4 * ppi}" font-family="JetBrains Mono" font-weight="900" font-size="9" fill="#0F0F0F" text-anchor="middle">1" x 1"</text>
+                <text x="${0.5 * ppi}" y="${0.7 * ppi}" font-family="JetBrains Mono" font-size="7" fill="#0F0F0F" text-anchor="middle">SCALE CHECK</text>
+            `;
+            g.appendChild(text);
+
+            return g;
+        }
+
+        function adjustZoom(delta) {
+            state.zoom = Math.max(0.4, Math.min(2.5, state.zoom + delta));
+            document.getElementById('zoom-readout').textContent = `${Math.round(state.zoom * 100)}%`;
+            renderPattern();
+        }
+
+        function resetZoom() {
+            state.zoom = 1.0;
+            document.getElementById('zoom-readout').textContent = '100%';
+            renderPattern();
+        }
+
+        function setViewFilter(filter) {
+            state.viewFilter = filter;
+            ['all', 'front', 'back'].forEach(f => {
+                const btn = document.getElementById(`view-btn-${f}`);
+                if (btn) {
+                    if (f === filter) {
+                        btn.className = "px-2 py-0.5 bg-black text-white font-bold border border-black";
+                    } else {
+                        btn.className = "px-2 py-0.5 bg-gray-100 hover:bg-black hover:text-white border border-black";
+                    }
+                }
+            });
+            renderPattern();
+        }
+
+        function openPrintModal() {
+            const modal = document.getElementById('print-modal-backdrop');
+            const summaryInfo = document.getElementById('tiling-summary-info');
+            const previewContainer = document.getElementById('modal-tiles-preview');
+
+            previewContainer.innerHTML = ''; // Reset preview
+
+            // Print Paper Specifications (Inches)
+            const paperW = 8.5;
+            const paperH = 11.0;
+            const margin = 0.5;
+            const printableW = paperW - (margin * 2); // 7.5"
+            const printableH = paperH - (margin * 2); // 10.0"
+
+            const p = state.params;
+            const halfChest = p.chestWidth / 2;
+            const totalWidthInches = (halfChest * 2) + 12.0;
+            const totalHeightInches = p.garmentLength + 6.0;
+
+            // Calculate Required Pages Grid
+            const cols = Math.ceil(totalWidthInches / printableW);
+            const rows = Math.ceil(totalHeightInches / printableH);
+            const totalPages = cols * rows;
+
+            summaryInfo.innerHTML = `
+                TOTAL PATTERN TILES: <span class="text-orange-600">${totalPages} PAGES</span> (${cols} COLS × ${rows} ROWS)
+                <span class="block font-normal text-[10px] text-gray-500">FORMATTED FOR STANDARD 8.5" x 11" LETTER PAPER</span>
+            `;
+
+            // Generate Tile Cards
+            const rowLabels = ["A", "B", "C", "D", "E", "F"];
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    const tileCode = `${rowLabels[r] || 'R'}${c + 1}`;
+                    
+                    const tileCard = document.createElement('div');
+                    tileCard.className = "bg-white nociv-border p-3 w-full flex flex-col justify-between shadow-sm";
+                    tileCard.style.aspectRatio = "8.5 / 11";
+
+                    tileCard.innerHTML = `
+                        <div class="flex justify-between items-center border-b border-black pb-1 mb-2 font-mono-code text-[10px]">
+                            <span class="font-bold bg-black text-white px-1.5 py-0.5">TILE ${tileCode}</span>
+                            <span>ROW ${r + 1} / COL ${c + 1}</span>
+                        </div>
+                        <div class="flex-1 bg-gray-50 border border-dashed border-gray-300 flex items-center justify-center relative overflow-hidden">
+                            <!-- Registration Crosshairs -->
+                            <div class="absolute top-1 left-1 text-[8px] font-mono-code">➕</div>
+                            <div class="absolute top-1 right-1 text-[8px] font-mono-code">➕</div>
+                            <div class="absolute bottom-1 left-1 text-[8px] font-mono-code">➕</div>
+                            <div class="absolute bottom-1 right-1 text-[8px] font-mono-code">➕</div>
+                            <span class="font-mono-code text-[10px] font-bold text-gray-400">NOCIV PATTERN DATA</span>
+                        </div>
+                        <div class="mt-2 text-[9px] font-mono-code text-gray-500 text-center">
+                            Match crosshairs with adjacent tiles
+                        </div>
+                    `;
+                    previewContainer.appendChild(tileCard);
+                }
+            }
+
+            modal.classList.remove('hidden');
+        }
+
+        function closePrintModal() {
+            document.getElementById('print-modal-backdrop').classList.add('hidden');
+        }
+
+        function triggerBrowserPrint() {
+            const printContainer = document.getElementById('print-output-container');
+            printContainer.innerHTML = ''; // Reset print DOM
+
+            // Printable Paper Specifications (96 DPI Standard CSS Inches)
+            const dpi = 96;
+            const paperW = 8.5 * dpi;
+            const paperH = 11.0 * dpi;
+            const printableW = 7.5; // Inches
+            const printableH = 10.0; // Inches
+
+            const p = state.params;
+            const halfChest = p.chestWidth / 2;
+            const totalWidthInches = (halfChest * 2) + 12.0;
+            const totalHeightInches = p.garmentLength + 6.0;
+
+            const cols = Math.ceil(totalWidthInches / printableW);
+            const rows = Math.ceil(totalHeightInches / printableH);
+
+            const rowLabels = ["A", "B", "C", "D", "E", "F"];
+
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    const tileCode = `${rowLabels[r] || 'R'}${c + 1}`;
+                    
+                    const pageDiv = document.createElement('div');
+                    pageDiv.className = 'print-page';
+
+                    // Page Header Info
+                    pageDiv.innerHTML = `
+                        <div style="display:flex; justify-between; align-items:center; border-bottom:2px solid black; padding-bottom:4px; margin-bottom:8px; font-family:'JetBrains Mono', monospace; font-size:10px;">
+                            <div>
+                                <strong>NOCIV // SEWING TILE ${tileCode}</strong> | ${state.garmentType.toUpperCase()}
+                            </div>
+                            <div>
+                                ROW ${r + 1} OF ${rows} | COL ${c + 1} OF ${cols}
+                            </div>
+                        </div>
+                        
+                        <!-- Alignment Crosshairs -->
+                        <div style="position:absolute; top:0.4in; left:0.4in; font-size:12px;">⊕</div>
+                        <div style="position:absolute; top:0.4in; right:0.4in; font-size:12px;">⊕</div>
+                        <div style="position:absolute; bottom:0.4in; left:0.4in; font-size:12px;">⊕</div>
+                        <div style="position:absolute; bottom:0.4in; right:0.4in; font-size:12px;">⊕</div>
+                    `;
+
+                    // SVG viewport slice for this page
+                    const svgClone = document.getElementById('pattern-svg').cloneNode(true);
+                    svgClone.setAttribute('width', `${printableW * dpi}`);
+                    svgClone.setAttribute('height', `${printableH * dpi}`);
+                    
+                    const viewBoxX = c * printableW * state.ppi;
+                    const viewBoxY = r * printableH * state.ppi;
+                    const viewBoxW = printableW * state.ppi;
+                    const viewBoxH = printableH * state.ppi;
+
+                    svgClone.setAttribute('viewBox', `${viewBoxX} ${viewBoxY} ${viewBoxW} ${viewBoxH}`);
+                    pageDiv.appendChild(svgClone);
+
+                    printContainer.appendChild(pageDiv);
+                }
+            }
+
+            closePrintModal();
+            window.print();
+        }
+
+        function downloadSVG() {
+            const svgEl = document.getElementById('pattern-svg');
+            const serializer = new XMLSerializer();
+            let source = serializer.serializeToString(svgEl);
+
+            if (!source.match(/^<svg[^>]+xmlns="http\:\/\/www\.w3\.org\/2000\/svg"/)) {
+                source = source.replace(/^<svg/, '<svg xmlns="http://www.w3.org/2000/svg"');
+            }
+
+            const blob = new Blob([source], { type: 'image/svg+xml;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `nociv-pattern-${state.garmentType}-${Date.now()}.svg`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+
+        function downloadTechPack() {
+            const techpackData = {
+                brand: "NOCIV",
+                app: "NOCIV Clothing Builder v1.0",
+                timestamp: new Date().toISOString(),
+                garmentType: state.garmentType,
+                parameters: state.params,
+                toggles: state.toggles,
+                notes: "Reference pattern specifications generated via nociv.co"
+            };
+
+            const blob = new Blob([JSON.stringify(techpackData, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `nociv-techpack-${state.garmentType}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+    </script>
+</body>
+</html>
