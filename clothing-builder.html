@@ -3,188 +3,777 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>NOCIV // Clothing Build</title>
+<title>NOCIV // Parametric Garment Builder</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
-:root{--paper:#F4F3EF;--paper2:#F8F7F2;--ink:#0F0F0F;--grid:#E0DDD5;--accent:#FF4500;}
-*{box-sizing:border-box} body{margin:0;font-family:Inter,sans-serif;background:var(--paper);color:var(--ink);overflow-x:hidden}.mono{font-family:'JetBrains Mono',monospace}.gridbg{background:var(--paper2);background-image:linear-gradient(to right,rgba(0,0,0,.055) 1px,transparent 1px),linear-gradient(to bottom,rgba(0,0,0,.055) 1px,transparent 1px);background-size:20px 20px}.border2{border:2px solid var(--ink)}.shadow2{box-shadow:4px 4px 0 var(--ink)}.shadow1{box-shadow:2px 2px 0 var(--ink)}.btn{border:2px solid var(--ink);background:#fff;font-weight:800;text-transform:uppercase;transition:.1s}.btn:hover{background:var(--ink);color:#fff;transform:translate(-1px,-1px);box-shadow:3px 3px 0 var(--ink)}.btn.active{background:var(--ink);color:#fff}.field{width:100%;border:2px solid var(--ink);background:#fff;padding:8px;font-family:'JetBrains Mono',monospace;font-size:12px}.field:focus{outline:2px solid var(--accent);outline-offset:1px}.check{accent-color:#000}.chip{border:2px solid var(--ink);padding:6px 8px;background:#fff;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;cursor:pointer}.chip.active{background:#000;color:#fff}.section-title{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}.mini{font-family:'JetBrains Mono',monospace;font-size:10px}.notice{background:#fff6bf;border:2px solid var(--ink)}
-@media print{body{background:#fff!important}#app,#modal{display:none!important}#printout{display:block!important}.page{page-break-after:always;width:8.5in;height:11in;padding:.45in;position:relative;background:#fff}.page svg{width:7.6in;height:9.8in} }
-#printout{display:none}
+:root { --paper:#F4F3EF; --paper2:#F8F7F2; --ink:#0F0F0F; --grid:#E0DDD5; --accent:#FF4500; --blue:#2563EB; }
+* { box-sizing:border-box; }
+body { margin:0; font-family:'Inter',sans-serif; background:var(--paper); color:var(--ink); overflow-x:hidden; }
+.mono { font-family:'JetBrains Mono',monospace; }
+.gridbg { background:var(--paper2); background-image:linear-gradient(to right,rgba(0,0,0,.055) 1px,transparent 1px),linear-gradient(to bottom,rgba(0,0,0,.055) 1px,transparent 1px); background-size:20px 20px; }
+.border2 { border:2px solid var(--ink); }
+.shadow2 { box-shadow:4px 4px 0 var(--ink); }
+.shadow1 { box-shadow:2px 2px 0 var(--ink); }
+.btn { border:2px solid var(--ink); background:#fff; font-weight:800; text-transform:uppercase; transition:.1s; }
+.btn:hover { background:var(--ink); color:#fff; transform:translate(-1px,-1px); box-shadow:3px 3px 0 var(--ink); }
+.btn.active { background:var(--ink); color:#fff; }
+.field { width:100%; border:2px solid var(--ink); background:#fff; padding:8px; font-family:'JetBrains Mono',monospace; font-size:12px; }
+.field:focus { outline:2px solid var(--accent); outline-offset:1px; }
+.check { accent-color:#000; }
+.section-title { font-family:'JetBrains Mono',monospace; font-size:11px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; }
+.mini { font-family:'JetBrains Mono',monospace; font-size:10px; }
+.notice { background:#fff6bf; border:2px solid var(--ink); }
+
+@media print {
+  body { background:#fff!important; color:#000!important; }
+  #app, #modal, #guideModal { display:none!important; }
+  #printout { display:block!important; }
+  .print-page { page-break-after:always; width:8.5in; height:11in; padding:0.4in; position:relative; background:#fff; box-sizing:border-box; }
+  .print-page svg { width:7.7in; height:10.2in; }
+}
+#printout { display:none; }
 </style>
 </head>
 <body class="min-h-screen">
+
 <div id="app">
-<header class="border2 border-l-0 border-r-0 border-t-0 bg-white px-4 py-3 flex flex-wrap items-center justify-between gap-3">
-  <div class="flex items-center gap-3"><a href="https://nociv.co" target="_blank" class="bg-black text-white px-3 py-1 mono font-bold tracking-wider">NOCIV //</a><div><div class="text-xl md:text-2xl font-black uppercase leading-none">Clothing Build</div><div class="mini text-gray-600 mt-1">PARAMETRIC 2D GARMENT + ACCESSORY BUILDER</div></div></div>
-  <div class="flex gap-2 items-center"><span class="hidden md:inline-block mono text-xs font-bold border2 px-2 py-1 bg-yellow-300">BUY • BUILD • SHARE</span><button class="btn px-3 py-2 text-xs mono" onclick="resetAll()">Reset</button><button class="btn bg-black text-white px-3 py-2 text-xs mono" onclick="openPrint()">Print Pattern</button></div>
-</header>
-<div class="flex flex-col lg:flex-row min-h-[calc(100vh-73px)]">
-<aside class="w-full lg:w-[390px] bg-[#FAF9F5] border2 border-l-0 border-t-0 border-b-0 border-r-2 p-4 overflow-y-auto lg:max-h-[calc(100vh-73px)]">
-  <div class="notice p-3 mb-4 text-xs mono"><b>BUILD TOOL / v2</b><br>Enter your measurements, choose a base, add details, then print a tiled pattern. The technical flat is a proportional design preview. Validate fit with a test garment before production.</div>
-  <div class="section-title mb-2">1. Choose a base</div>
-  <div class="grid grid-cols-2 gap-2 mb-5" id="baseButtons"></div>
+  <!-- Header -->
+  <header class="border2 border-l-0 border-r-0 border-t-0 bg-white px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+    <div class="flex items-center gap-3">
+      <a href="https://nociv.co" target="_blank" class="bg-black text-white px-3 py-1 mono font-bold tracking-wider">NOCIV //</a>
+      <div>
+        <div class="text-xl md:text-2xl font-black uppercase leading-none">Clothing Build</div>
+        <div class="mini text-gray-600 mt-1">PARAMETRIC GARMENT CAD &amp; DRAFTING ENGINE</div>
+      </div>
+    </div>
+    <div class="flex gap-2 items-center flex-wrap">
+      <button class="btn px-3 py-2 text-xs mono" onclick="openGuide()">? Fit &amp; Measure Guide</button>
+      <button class="btn px-3 py-2 text-xs mono" onclick="resetAll()">Reset</button>
+      <button class="btn bg-black text-white px-3 py-2 text-xs mono" onclick="openPrint()">Print / PDF Tiling</button>
+    </div>
+  </header>
 
-  <div id="controls"></div>
+  <!-- Main Grid -->
+  <div class="flex flex-col lg:flex-row min-h-[calc(100vh-73px)]">
+    <!-- Sidebar / Controls -->
+    <aside class="w-full lg:w-[410px] bg-[#FAF9F5] border2 border-l-0 border-t-0 border-b-0 border-r-2 p-4 overflow-y-auto lg:max-h-[calc(100vh-73px)]">
+      <div class="notice p-3 mb-4 text-xs mono">
+        <b>TECHNICAL GARMENT MAKER</b><br>
+        Adjust body measurements, ease allowance, and structural features. View the live <b>Tech Flat</b> to see design proportion &amp; 2D body space fill, or switch to <b>Pattern</b> for full printable geometry.
+      </div>
 
-  <div class="border-t-2 border-black pt-4 mt-5 space-y-2">
-    <button class="btn w-full py-2 text-xs mono" onclick="downloadSVG()">Download SVG / CAD</button>
-    <button class="btn w-full py-2 text-xs mono bg-gray-100" onclick="downloadTechPack()">Download Tech Pack JSON</button>
+      <div class="section-title mb-2">1. Select Garment Archetype</div>
+      <div class="grid grid-cols-2 gap-2 mb-5" id="baseButtons"></div>
+
+      <div id="controls"></div>
+
+      <div class="border-t-2 border-black pt-4 mt-5 space-y-2">
+        <button class="btn w-full py-2 text-xs mono" onclick="downloadSVG()">Download CAD Vector (.SVG)</button>
+        <button class="btn w-full py-2 text-xs mono bg-gray-100" onclick="downloadTechPack()">Download Tech Pack Spec (.JSON)</button>
+      </div>
+    </aside>
+
+    <!-- Canvas / Viewport -->
+    <main class="flex-1 gridbg relative min-h-[70vh] flex flex-col">
+      <!-- Toolbar -->
+      <div class="absolute top-4 left-4 z-10 flex flex-wrap gap-2">
+        <div class="bg-white border2 shadow1 p-1 flex gap-1 mono text-xs">
+          <button id="modeFlat" class="btn active px-2 py-1" onclick="setMode('flat')">TECH FLAT</button>
+          <button id="modePattern" class="btn px-2 py-1" onclick="setMode('pattern')">PATTERN PIECES</button>
+        </div>
+        <div class="bg-white border2 shadow1 p-1 flex gap-1 mono text-xs">
+          <button class="btn px-2 py-1" onclick="zoom(-.1)">−</button>
+          <span id="zoomLabel" class="px-2 py-1 font-bold">100%</span>
+          <button class="btn px-2 py-1" onclick="zoom(.1)">+</button>
+          <button class="btn px-2 py-1" onclick="resetZoom()">RESET</button>
+        </div>
+        <div id="bodyOverlayToggle" class="bg-white border2 shadow1 p-1 flex gap-1 mono text-xs items-center px-2">
+          <label class="cursor-pointer flex items-center gap-1 font-bold">
+            <input type="checkbox" id="chkBodyOverlay" class="check" checked onchange="toggleBodyOverlay(this.checked)">
+            2D Body Baseline Overlay
+          </label>
+        </div>
+      </div>
+
+      <div class="absolute top-4 right-4 z-10 hidden md:block">
+        <div class="bg-white border2 shadow1 p-3 max-w-xs mini">
+          <b>1 INCH SCALE CHECK</b><br>Ensure printer scale is 100%. Check square before cutting fabric.
+        </div>
+      </div>
+
+      <!-- SVG Rendering Canvas -->
+      <div id="canvas" class="flex-1 overflow-auto flex items-center justify-center p-8 pt-24"></div>
+
+      <!-- Status Bar -->
+      <div class="bg-white border2 border-l-0 border-r-0 border-b-0 p-2 px-4 flex justify-between mono text-[10px] text-gray-600 flex-wrap gap-2">
+        <span id="legendText">TECH FLAT VIEW · BLACK = OUTER GARMENT · BLUE DASH = 2D BODY BASELINE</span>
+        <span id="tileSizeEst">ESTIMATED TILES: --</span>
+      </div>
+    </main>
   </div>
-</aside>
-<main class="flex-1 gridbg relative min-h-[70vh] flex flex-col">
-  <div class="absolute top-4 left-4 z-10 flex flex-wrap gap-2">
-    <div class="bg-white border2 shadow1 p-1 flex gap-1 mono text-xs"><button id="modePattern" class="btn active px-2 py-1" onclick="setMode('pattern')">PATTERN</button><button id="modeFlat" class="btn px-2 py-1" onclick="setMode('flat')">TECH FLAT</button></div>
-    <div class="bg-white border2 shadow1 p-1 flex gap-1 mono text-xs"><button class="btn px-2 py-1" onclick="zoom(-.1)">−</button><span id="zoomLabel" class="px-2 py-1 font-bold">100%</span><button class="btn px-2 py-1" onclick="zoom(.1)">+</button><button class="btn px-2 py-1" onclick="resetZoom()">FIT</button></div>
+</div>
+
+<!-- Print & PDF Tiling Modal -->
+<div id="modal" class="fixed inset-0 bg-black/75 z-50 hidden items-center justify-center p-4">
+  <div class="bg-white border2 shadow2 w-full max-w-4xl max-h-[90vh] flex flex-col">
+    <div class="bg-black text-white p-4 flex justify-between items-center">
+      <div>
+        <b class="mono text-sm">HOME PRINTER TILING ENGINE (US LETTER / 8.5" x 11")</b>
+        <div class="mini text-gray-300">AUTO-IMPOSED TILES WITH ALIGNMENT CROSSHAIRS &amp; MARGIN OVERLAPS</div>
+      </div>
+      <button onclick="closePrint()" class="text-xl font-bold px-2">×</button>
+    </div>
+    <div class="p-5 overflow-auto flex-1">
+      <div id="printSummary" class="mono text-xs font-bold mb-3 p-3 bg-gray-100 border2"></div>
+      <div class="notice p-3 text-xs mono mb-4">
+        <b>PRINTING INSTRUCTIONS:</b><br>
+        1. Set printer scaling to <b>100% / Actual Size</b> (do NOT use "Fit to Printable Area").<br>
+        2. Print or "Save to PDF". Measure the 1-Inch Scale Box on Tile A1.<br>
+        3. Trim margins along dotted lines and align target registration crosshairs (e.g. A1 → A2).
+      </div>
+      <div id="tilePreview" class="grid sm:grid-cols-2 md:grid-cols-3 gap-4"></div>
+    </div>
+    <div class="border-t-2 border-black p-4 flex justify-end gap-2 bg-gray-50">
+      <button class="btn px-4 py-2 text-xs mono" onclick="closePrint()">Cancel</button>
+      <button class="btn bg-black text-white px-5 py-2 text-xs mono" onclick="browserPrint()">PRINT / SAVE AS PDF</button>
+    </div>
   </div>
-  <div class="absolute top-4 right-4 z-10 hidden md:block"><div class="bg-white border2 shadow1 p-3 max-w-xs mini"><b>1 INCH SCALE CHECK</b><br>Print at 100%. Measure the square before cutting.</div></div>
-  <div id="canvas" class="flex-1 overflow-auto flex items-center justify-center p-8 pt-24"></div>
-  <div class="bg-white border2 border-l-0 border-r-0 border-b-0 p-2 px-4 flex justify-between mono text-[10px] text-gray-600"><span>CUT LINE = BLACK · SEAM LINE = RED DASH · FOLD = BLUE DOT</span><span id="status">UNITS: INCHES</span></div>
-</main>
 </div>
+
+<!-- Measurement Guide Modal -->
+<div id="guideModal" class="fixed inset-0 bg-black/75 z-50 hidden items-center justify-center p-4">
+  <div class="bg-white border2 shadow2 w-full max-w-2xl max-h-[85vh] flex flex-col">
+    <div class="bg-black text-white p-4 flex justify-between items-center">
+      <b class="mono text-sm">ASTM APPAREL MEASUREMENT GUIDE</b>
+      <button onclick="closeGuide()" class="text-xl font-bold px-2">×</button>
+    </div>
+    <div class="p-5 overflow-auto space-y-4 text-xs mono">
+      <p class="leading-relaxed">
+        To construct a reliable pattern, measure over standard undergarments using a flexible vinyl measuring tape. Keep tape snug but not binding.
+      </p>
+      <div class="border2 p-3 bg-yellow-50 space-y-2">
+        <b class="text-sm">Key Body Baselines:</b>
+        <ul class="list-disc pl-5 space-y-1">
+          <li><b>Natural Waist:</b> Measure around the narrowest torso point (usually 1-2 inches above naval).</li>
+          <li><b>Seat / Hip:</b> Measure around the fullest portion of the buttocks (approx. 7-9 inches below waist).</li>
+          <li><b>Front Rise:</b> Sit in a hard chair. Measure vertically from waist side along chair seat to front waist band.</li>
+          <li><b>Inseam:</b> Measure along inner leg from crotch seam down to floor/ankle bone.</li>
+          <li><b>Chest:</b> Measure full circumference around fullest part of chest under armpits.</li>
+          <li><b>Cross Shoulder:</b> Measure from shoulder point bone across upper back to opposite shoulder bone.</li>
+        </ul>
+      </div>
+      <div class="border2 p-3 space-y-1">
+        <b>EASE ALLOWANCE MATRIX:</b>
+        <p class="text-gray-600">
+          • Fitted/Structured: +0.5" to +1.5" total ease<br>
+          • Regular Workwear: +2" to +4" total ease<br>
+          • Oversized/Outerwear: +5" to +8" total ease
+        </p>
+      </div>
+    </div>
+    <div class="border-t-2 border-black p-3 flex justify-end">
+      <button class="btn bg-black text-white px-4 py-2 text-xs mono" onclick="closeGuide()">GOT IT</button>
+    </div>
+  </div>
 </div>
-<div id="modal" class="fixed inset-0 bg-black/75 z-50 hidden items-center justify-center p-4"><div class="bg-white border2 shadow2 w-full max-w-4xl max-h-[90vh] flex flex-col"><div class="bg-black text-white p-4 flex justify-between"><div><b class="mono">PRINTABLE TILE ENGINE</b><div class="mini text-gray-300">8.5 × 11 LETTER / 100% SCALE</div></div><button onclick="closePrint()" class="text-xl">×</button></div><div class="p-5 overflow-auto"><div id="printSummary" class="mono text-xs font-bold mb-3"></div><div class="notice p-3 text-xs mono mb-4">Set printer scale to 100%. Do not use “fit to page.” Measure the 1 inch calibration square. Cut and tape tiles together by their labels.</div><div id="tilePreview" class="grid md:grid-cols-2 gap-4"></div></div><div class="border-t-2 border-black p-4 flex justify-end"><button class="btn bg-black text-white px-5 py-2 text-xs mono" onclick="browserPrint()">PRINT ALL PAGES</button></div></div></div>
+
+<!-- Hidden container for window.print() -->
 <div id="printout"></div>
+
 <script>
-
-const BASES={
- pants:{name:'PANTS',tag:'WORKWEAR / UTILITY'},
- tshirt:{name:'T-SHIRT',tag:'TEE / FITTED BASIC'},
- cadet:{name:'CADET HAT',tag:'HEADWEAR'},
- tote:{name:'TOTE',tag:'BAG'},
- toolbag:{name:'TOOL BAG',tag:'UTILITY'},
- fanny:{name:'FANNY PACK',tag:'WAIST BAG'},
- crossbody:{name:'CROSSBODY',tag:'STRAP BAG'},
- backpack:{name:'FLAP BACKPACK',tag:'PACK'}
+// --- GLOBAL CONSTANTS & STATE ---
+const BASES = {
+  pants: { name: 'PANTS', tag: 'UTILITY / WORKWEAR' },
+  tshirt: { name: 'T-SHIRT', tag: 'TEE / FITTED BASIC' },
+  cadet: { name: 'CADET HAT', tag: 'HEADWEAR' },
+  tote: { name: 'TOTE BAG', tag: 'ACCESSSORY' },
+  fanny: { name: 'FANNY PACK', tag: 'WAIST BAG' }
 };
-const defaults={
- pants:{waist:32,hip:42,rise:11.5,inseam:30,thigh:25,knee:18,hem:16,waistEase:1,hipEase:3,thighEase:2,kneeEase:1,style:'workwear',fit:'straight',frontPocket:'slash',backPocket:'square',utilityPocket:'none',cargoHeight:12,beltLoops:true,frontDart:true,backDarts:true,fly:true,pocketBag:true,sa:.5,showGrain:true,showNotches:true,showDarts:true,showLabels:true},
- tshirt:{chest:40,length:28,shoulder:18,sleeve:8,armhole:9,neck:16,neckDepth:3.5,hemEase:4,fit:'regular',collar:'crew',placket:false,pocket:false,sa:.5,showGrain:true,showNotches:true,showDarts:false,showLabels:true},
- cadet:{head:23,crown:3.5,bill:2.5,panels:6,billShape:'curved',pocket:false,pocketSize:'small',earFlap:false,sa:.5},
- tote:{width:16,height:14,depth:4,strap:22,topPocket:false,insidePocket:false,sidePocket:false,sa:.5},
- toolbag:{width:18,height:10,depth:7,strap:24,pocketCount:6,toolLoops:true,sidePockets:true,sa:.5},
- fanny:{width:11,height:6,depth:3,straps:'belt',zipPocket:true,frontPocket:true,divider:false,sa:.5},
- crossbody:{width:10,height:8,depth:3,straps:48,flap:true,frontPocket:true,insidePocket:true,sa:.5},
- backpack:{width:12,height:16,depth:5,strap:26,flap:true,frontPocket:true,sidePockets:false,topHandle:true,sa:.5}
-};
-const presets={S:{waist:28,hip:38,rise:10.5,inseam:29,thigh:22,knee:16.5,hem:14.5},M:{waist:32,hip:42,rise:11.5,inseam:30,thigh:25,knee:18,hem:16},L:{waist:36,hip:46,rise:12.25,inseam:31,thigh:27,knee:19.5,hem:17},XL:{waist:40,hip:50,rise:13,inseam:31,thigh:29,knee:21,hem:18}};
-const teePresets={S:{chest:36,length:26,shoulder:16,sleeve:8,armhole:8.5,neck:15},M:{chest:40,length:28,shoulder:18,sleeve:8,armhole:9,neck:16},L:{chest:44,length:29.5,shoulder:19.5,sleeve:8.5,armhole:9.5,neck:17},XL:{chest:48,length:31,shoulder:21,sleeve:9,armhole:10,neck:18}};
-const state={base:'pants',mode:'pattern',zoom:1,values:JSON.parse(JSON.stringify(defaults.pants))};
-const NS='http://www.w3.org/2000/svg';
-const el=(tag,attrs={},html='')=>{const n=document.createElement(tag);Object.entries(attrs).forEach(([k,v])=>n.setAttribute(k,v));n.innerHTML=html;return n};
-function renderBaseButtons(){const wrap=document.getElementById('baseButtons');wrap.innerHTML='';Object.entries(BASES).forEach(([k,b])=>{const btn=el('button',{class:`btn text-left p-2 ${state.base===k?'active':''}`,onclick:`selectBase('${k}')`},`<b>${b.name}</b><span class="block mini opacity-70">${b.tag}</span>`);wrap.appendChild(btn)})}
-function selectBase(k){state.base=k;state.values=JSON.parse(JSON.stringify(defaults[k]));renderBaseButtons();renderControls();render()}
-function sliderField(key,label,min,max,step=0.25,unit='in'){const v=state.values[key];return `<div class="mb-4"><div class="flex justify-between mb-1"><span class="mini font-bold uppercase">${label}</span><span id="read-${key}" class="mono text-xs font-black">${Number(v).toFixed(step<1?2:1)}${unit}</span></div><input type="range" min="${min}" max="${max}" step="${step}" value="${v}" oninput="setVal('${key}',this.value)" class="w-full"><div class="flex justify-between mini text-gray-500"><span>${min}${unit}</span><span>${max}${unit}</span></div></div>`}
-function selectField(key,label,opts){return `<label class="block mb-3"><span class="mini font-bold uppercase block mb-1">${label}</span><select class="field" onchange="setVal('${key}',this.value)">${opts.map(([v,t])=>`<option value="${v}" ${state.values[key]===v?'selected':''}>${t}</option>`).join('')}</select></label>`}
-function boolField(key,label){return `<label class="flex items-center gap-2 mb-3 mini font-bold cursor-pointer"><input class="check w-4 h-4" type="checkbox" ${state.values[key]?'checked':''} onchange="setVal('${key}',this.checked)">${label}</label>`}
-function presetButtons(kind){return `<div class="border2 bg-white p-3 mb-4 shadow1"><div class="section-title mb-2">Quick size</div><div class="grid grid-cols-4 gap-1">${['S','M','L','XL'].map(s=>`<button class="btn py-1 text-xs" onclick="applyPreset('${s}')">${s}</button>`).join('')}</div><div class="mini text-gray-500 mt-2">Presets establish a starting block. Sliders refine the actual garment.</div></div>`}
-function renderControls(){const c=document.getElementById('controls');let h='';
-if(state.base==='pants'){
- h+=presetButtons('pants');
- h+=`<div class="section-title mb-2">2. Body + fit measurements</div>`;
- h+=sliderField('waist','Natural waist',24,60,.25);h+=sliderField('hip','Seat / hip',30,70,.25);h+=sliderField('rise','Front rise',8,16,.25);h+=sliderField('inseam','Inseam',24,36,.25);h+=sliderField('thigh','Thigh circumference',18,36,.25);h+=sliderField('knee','Knee circumference',12,28,.25);h+=sliderField('hem','Leg opening circumference',10,26,.25);
- h+=`<div class="section-title mt-5 mb-2">Ease</div>`;h+=sliderField('waistEase','Waist ease',0,4,.25);h+=sliderField('hipEase','Hip ease',0,6,.25);h+=sliderField('thighEase','Thigh ease',0,5,.25);h+=sliderField('kneeEase','Knee ease',0,4,.25);
- h+=`<div class="section-title mt-5 mb-2">3. Style architecture</div>`;
- h+=selectField('style','Style',[['workwear','Workwear utility'],['field','Field / military'],['clean','Clean utility']]);h+=selectField('fit','Leg fit',[['straight','Straight'],['wide','Wide'],['extraWide','Extra wide']]);
- h+=selectField('frontPocket','Front pocket',[['none','None'],['slash','Slash pocket'],['utility','Utility patch'],['carpenter','Carpenter pocket']]);h+=selectField('backPocket','Back pocket',[['none','None'],['square','Square patch'],['welt','Welt'],['flap','Flap']]);h+=selectField('utilityPocket','Utility pocket',[['none','None'],['cargo','Cargo'],['phone','Phone'],['carpenter','Carpenter tool']]);h+=sliderField('cargoHeight','Cargo placement',7,18,.5);
- h+=`<div class="section-title mt-5 mb-2">4. Construction</div>`;h+=boolField('beltLoops','Belt loops');h+=boolField('frontDart','Front dart');h+=boolField('backDarts','Back darts');h+=boolField('fly','Fly construction');h+=boolField('pocketBag','Pocket bag');h+=sliderField('sa','Seam allowance',0,.75,.125);
- h+=`<div class="section-title mt-5 mb-2">5. Pattern marks</div>`;h+=boolField('showGrain','Grainlines');h+=boolField('showNotches','Notches');h+=boolField('showDarts','Dart construction');h+=boolField('showLabels','Piece labels');
-}else if(state.base==='tshirt'){
- h+=presetButtons('tshirt');h+=`<div class="section-title mb-2">2. Body + fit measurements</div>`;h+=sliderField('chest','Chest circumference',30,60,.25);h+=sliderField('length','Garment length',20,36,.25);h+=sliderField('shoulder','Cross shoulder',14,24,.25);h+=sliderField('sleeve','Sleeve length',5,14,.25);h+=sliderField('armhole','Armhole depth',7,14,.25);h+=sliderField('neck','Neck circumference',13,22,.25);h+=sliderField('neckDepth','Front neck depth',1.5,7,.25);h+=sliderField('hemEase','Body ease',0,10,.25);
- h+=`<div class="section-title mt-5 mb-2">3. Construction</div>`;h+=selectField('fit','Fit',[['regular','Regular'],['boxy','Boxy'],['oversized','Oversized']]);h+=selectField('collar','Collar',[['crew','Crew band'],['henley','Henley band'],['button','Button collar']]);h+=boolField('placket','Front placket');h+=boolField('pocket','Chest pocket');h+=sliderField('sa','Seam allowance',0,.75,.125);h+=`<div class="section-title mt-5 mb-2">4. Pattern marks</div>`;h+=boolField('showGrain','Grainlines');h+=boolField('showNotches','Notches');h+=boolField('showLabels','Piece labels');
-}else{
- h+=`<div class="notice p-3 text-xs mono mb-4"><b>ACCESSORY MODULE</b><br>This module keeps the same 1:1 output system. The next patternmaking pass can give this base its full production block.</div>`;
- const v=state.values; if(state.base==='cadet'){h+=sliderField('head','Head circumference',20,26,.25);h+=sliderField('crown','Crown height',2.5,5,.25);h+=sliderField('bill','Bill length',1.5,4,.25);h+=selectField('panels','Panel count',[[4,'4'],[5,'5'],[6,'6'],[8,'8']]);h+=selectField('billShape','Bill shape',[['flat','Flat'],['curved','Curved'],['long','Long utility']]);h+=boolField('pocket','Crown pocket');h+=boolField('earFlap','Ear / neck flap');} else {h+=sliderField('width','Width',6,30,.25);h+=sliderField('height','Height',5,24,.25);h+=sliderField('depth','Depth',0,12,.25);if(v.strap!==undefined)h+=sliderField('strap','Strap length',10,60,.5);if(v.pocketCount!==undefined)h+=sliderField('pocketCount','Pocket count',0,12,1,'');if(v.toolLoops!==undefined)h+=boolField('toolLoops','Tool loops');if(v.sidePockets!==undefined)h+=boolField('sidePockets','Side pockets');if(v.flap!==undefined)h+=boolField('flap','Flap');if(v.frontPocket!==undefined)h+=boolField('frontPocket','Front pocket');if(v.insidePocket!==undefined)h+=boolField('insidePocket','Inside pocket');if(v.topPocket!==undefined)h+=boolField('topPocket','Top pocket');}h+=sliderField('sa','Seam allowance',0,.75,.125);
-}
-c.innerHTML=h}
-function setVal(k,v){state.values[k]=typeof v==='boolean'?v:parseFloat(v);const r=document.getElementById('read-'+k);if(r)r.textContent=(typeof v==='boolean'?'':Number(v).toFixed(Number(v)%1?2:1)+'in');render()}
-function applyPreset(s){const src=state.base==='tshirt'?teePresets[s]:presets[s];if(src)Object.assign(state.values,src);renderControls();render()}
-function resetAll(){state.values=JSON.parse(JSON.stringify(defaults[state.base]));renderControls();render()}
-function setMode(m){state.mode=m;document.getElementById('modePattern').classList.toggle('active',m==='pattern');document.getElementById('modeFlat').classList.toggle('active',m==='flat');render()}
-function zoom(d){state.zoom=Math.max(.4,Math.min(2.5,state.zoom+d));document.getElementById('zoomLabel').textContent=Math.round(state.zoom*100)+'%';render()}
-function resetZoom(){state.zoom=1;document.getElementById('zoomLabel').textContent='100%';render()}
-function svgRoot(w,h){const s=document.createElementNS(NS,'svg');s.setAttribute('xmlns',NS);s.setAttribute('width',`${w*state.zoom}px`);s.setAttribute('height',`${h*state.zoom}px`);s.setAttribute('viewBox',`0 0 ${w} ${h}`);s.dataset.unitsPerInch='72';s.style.maxWidth='none';return s}
-function S(x){return x*72}
-function mkPath(svg,d,stroke='#000',fill='#fff',dash=''){const n=document.createElementNS(NS,'path');n.setAttribute('d',d);n.setAttribute('stroke',stroke);n.setAttribute('fill',fill);n.setAttribute('stroke-width',2);if(dash)n.setAttribute('stroke-dasharray',dash);svg.appendChild(n);return n}
-function pathIn(svg,coords,stroke='#000',fill='#fff',dash=''){return mkPath(svg,coords,stroke,fill,dash)}
-function line(svg,x1,y1,x2,y2,stroke='#000',dash=''){const n=document.createElementNS(NS,'line');Object.entries({x1:S(x1),y1:S(y1),x2:S(x2),y2:S(y2),stroke}).forEach(([k,v])=>n.setAttribute(k,v));n.setAttribute('stroke-width',1.5);if(dash)n.setAttribute('stroke-dasharray',dash);svg.appendChild(n);return n}
-function txt(svg,x,y,t,size=10,weight=700,fill='#000',anchor='start'){const n=document.createElementNS(NS,'text');n.setAttribute('x',S(x));n.setAttribute('y',S(y));n.setAttribute('font-family','JetBrains Mono');n.setAttribute('font-size',size);n.setAttribute('font-weight',weight);n.setAttribute('fill',fill);n.setAttribute('text-anchor',anchor);n.textContent=t;svg.appendChild(n);return n}
-function rectIn(svg,x,y,w,h,stroke='#000',fill='#fff',dash=''){const n=document.createElementNS(NS,'rect');Object.entries({x:S(x),y:S(y),width:S(w),height:S(h),stroke,fill}).forEach(([k,v])=>n.setAttribute(k,v));n.setAttribute('stroke-width',1.5);if(dash)n.setAttribute('stroke-dasharray',dash);svg.appendChild(n);return n}
-function addScale(svg,x,y){rectIn(svg,x,y,1,1,'#000','#fff6bf');txt(svg,x+.5,y+.38,'1 IN',9,900,'#000','middle');txt(svg,x+.5,y+.7,'SCALE',7,700,'#000','middle')}
-function addGrain(svg,x,y,len,vertical=true){if(vertical){line(svg,x,y,x,y+len,'#2563EB','2 3');line(svg,x,y,x-.12,y+.2,'#2563EB');line(svg,x,y,x+.12,y+.2,'#2563EB');line(svg,x,y+len,x-.12,y+len-.2,'#2563EB');line(svg,x,y+len,x+.12,y+len-.2,'#2563EB');txt(svg,x+.18,y+len/2,'GRAIN',7,700,'#2563EB')}else{line(svg,x,y,x+len,y,'#2563EB','2 3')}}
-function addNotch(svg,x,y,dir='down',label=''){const d=dir==='down'?`M ${S(x-.08)} ${S(y)} L ${S(x)} ${S(y+.16)} L ${S(x+.08)} ${S(y)}`:`M ${S(x-.08)} ${S(y)} L ${S(x)} ${S(y-.16)} L ${S(x+.08)} ${S(y)}`;mkPath(svg,d,'#DC2626','none');if(label)txt(svg,x+.12,y+.08,label,6,700,'#DC2626')}
-function qPath(points){return points.map((p,i)=>(i?' Q ':'M ')+p.map(S).join(' ')).join('')}
-function poly(points){return points.map(p=>p[0]+','+p[1]).join(' ')}
-function sampleQuad(a,c,b,n=10){const out=[];for(let i=0;i<=n;i++){const t=i/n,u=1-t;out.push([u*u*a[0]+2*u*t*c[0]+t*t*b[0],u*u*a[1]+2*u*t*c[1]+t*t*b[1]])}return out}
-function sampleCubic(a,c1,c2,b,n=12){const out=[];for(let i=0;i<=n;i++){const t=i/n,u=1-t;out.push([u*u*u*a[0]+3*u*u*t*c1[0]+3*u*t*t*c2[0]+t*t*t*b[0],u*u*u*a[1]+3*u*u*t*c1[1]+3*u*t*t*c2[1]+t*t*t*b[1]])}return out}
-function offsetClosed(points,d){let area=0;for(let i=0;i<points.length;i++){const a=points[i],b=points[(i+1)%points.length];area+=a[0]*b[1]-b[0]*a[1]}const sign=area>0?1:-1;const lines=[];for(let i=0;i<points.length;i++){const a=points[i],b=points[(i+1)%points.length];let dx=b[0]-a[0],dy=b[1]-a[1],len=Math.hypot(dx,dy)||1;let nx=sign*dy/len,ny=-sign*dx/len;lines.push({a:[a[0]+nx*d,a[1]+ny*d],b:[b[0]+nx*d,b[1]+ny*d],nx,ny})}function inter(l1,l2){const x1=l1.a[0],y1=l1.a[1],x2=l1.b[0],y2=l1.b[1],x3=l2.a[0],y3=l2.a[1],x4=l2.b[0],y4=l2.b[1];const den=(x1-x2)*(y3-y4)-(y1-y2)*(x3-x4);if(Math.abs(den)<1e-9)return l1.b;const t=((x1-x3)*(y3-y4)-(y1-y3)*(x3-x4))/den;return [x1+t*(x2-x1),y1+t*(y2-y1)]}return lines.map((l,i)=>inter(lines[(i+lines.length-1)%lines.length],l))}
-function pathFromPoints(points){return 'M '+points.map(p=>`${S(p[0])} ${S(p[1])}`).join(' L ')+' Z'}
-function drawPiece(svg,pts,sa,label,cutQty='CUT 1',fold=false){const net=pathFromPoints(pts);mkPath(svg,net,'#DC2626','#fff','6 4');let cutPts=sa>0?offsetClosed(pts,sa):pts;mkPath(svg,pathFromPoints(cutPts),'#000','none');if(fold){line(svg,pts[0][0],pts[0][1],pts[pts.length-1][0],pts[pts.length-1][1],'#2563EB','2 3');txt(svg,pts[0][0]+.15,(pts[0][1]+pts[pts.length-1][1])/2,'FOLD',7,800,'#2563EB')}txt(svg,(Math.min(...pts.map(p=>p[0]))+Math.max(...pts.map(p=>p[0])))/2,(Math.min(...pts.map(p=>p[1]))+Math.max(...pts.map(p=>p[1])))/2,label,11,900,'#000','middle');txt(svg,(Math.min(...pts.map(p=>p[0]))+Math.max(...pts.map(p=>p[0])))/2,(Math.min(...pts.map(p=>p[1]))+Math.max(...pts.map(p=>p[1])))/2+.35,cutQty,7,700,'#DC2626','middle');return {net,cut:cutPts}}
-function pantsGeometry(p,front=true){
- const waist=(p.waist+p.waistEase)/4, hip=(p.hip+p.hipEase)/4, thigh=(p.thigh+p.thighEase)/4, knee=(p.knee+p.kneeEase)/4, hem=p.hem/4;
- const rise=p.rise, inseam=p.inseam, kneeY=rise+inseam*.52;
- const cfExt=(p.hip/16)+.25, cbExt=cfExt+1.0;
- const fitFactor=p.fit==='wide'?1.12:p.fit==='extraWide'?1.28:1;
- const kneeW=knee/2*fitFactor, hemW=hem/2*fitFactor;
- const crotchX=front?cfExt:cbExt;
- const waistSlope=front?0:.65;
- const sideWaist=[waist,waistSlope], sideHip=[hip,2.0], sideThigh=[thigh/2,kneeY-.75], sideKnee=[kneeW,kneeY], sideHem=[hemW,rise+inseam];
- const cf=[0,0], hemFold=[0,rise+inseam];
- const sideCurve=sampleCubic(sideWaist,[waist+1.0,1.0],[hip-.5,1.9],sideThigh,12);
- const kneeCurve=sampleQuad(sideThigh,[kneeW+.3,kneeY-.35],sideKnee,7);
- const inseamPts=[sideHem,[hemW*.45,rise+inseam],[hemW*.12,rise+inseam*.98],hemFold];
- const crotchStart=[-crotchX,rise*.96], crotchMid=[-crotchX*(front?.72:.78),rise*.72], crotchEnd=cf;
- const crotchCurve=sampleCubic(crotchStart,[-crotchX*1.02,rise*.88],crotchMid,crotchEnd,14);
- const pts=[cf,sideWaist,...sideCurve.slice(1),...kneeCurve.slice(1),...sampleQuad(sideKnee,[sideKnee[0]-.2,kneeY+.2],sideHem,7).slice(1),...inseamPts.slice(1),...crotchCurve.slice(1)];
- return {pts,waist,hip,thigh,knee,hem,rise,inseam,kneeY,crotchX,sideHip,sideThigh};
-}
-function drawDart(svg,x,y,len,depth,label){line(svg,x-depth/2,y,x,y+len,'#7C3AED','4 3');line(svg,x+depth/2,y,x,y+len,'#7C3AED','4 3');line(svg,x-depth/2,y,x+depth/2,y,'#7C3AED');txt(svg,x,y+len+.18,label,6,700,'#7C3AED','middle')}
-function drawPocketBag(svg,g,side='front',p){const w=Math.max(7,p.hip*.18),h=7;const x=side==='front'?g.sideHip*.18: g.sideHip+.8;const y=2.2;const pts=[[x,y],[x+w,y+.8],[x+w+.5,y+h],[x+1.5,y+h+1],[x-.5,y+h-.5]];drawPiece(svg,pts,p.sa,'POCKET BAG','CUT 1 PAIR');addGrain(svg,x+w/2,y+1,3)}
-function drawFly(svg,g,p){const x=-.15,y=.65,w=2.2,h=7;const pts=[[x,y],[x+w,y],[x+w+0.25,y+h],[x+0.2,y+h+.4],[x-.2,y+3],[x,y]];drawPiece(svg,pts,p.sa,'FLY','CUT 1');txt(svg,x+1,y+h+.7,'ZIP / BUTTON FLY',7,800,'#000','middle');}
-function drawWaistband(svg,p,offsetX,offsetY){const finished=p.waist+p.waistEase+1;const w=finished/2;const h=2.5;const pts=[[offsetX,offsetY],[offsetX+w,offsetY],[offsetX+w,offsetY+h],[offsetX,offsetY+h]];drawPiece(svg,pts,p.sa,'WAISTBAND','CUT 2');addGrain(svg,offsetX+w/2,offsetY+.35,1.7,false)}
-function patternPants(){const p=state.values,gF=pantsGeometry(p,true),gB=pantsGeometry(p,false);const margin=4, gap=4;const allPts=[...gF.pts,...gB.pts];let minX=Math.min(...allPts.map(a=>a[0]))-margin,maxX=Math.max(...allPts.map(a=>a[0]))+margin+14,minY=-2,maxY=p.rise+p.inseam+p.sa+6;const w=maxX-minX,h=maxY-minY;const s=svgRoot(w,h);txt(s,minX+1,minY+1,'NOCIV // PANTS BLOCK',16,900);txt(s,minX+1,minY+1.45,`${p.style.toUpperCase()} · ${p.fit.toUpperCase()} · WAIST ${p.waist}" · HIP ${p.hip}"`,8,700,'#555');
- const fx=-minX+1, bx=fx+gF.hip+gap+Math.max(2,gB.crotchX);const fPts=gF.pts.map(([x,y])=>[x+fx,y+1]);const bPts=gB.pts.map(([x,y])=>[x+bx,y+1]);drawPiece(s,fPts,p.sa,'FRONT','CUT 1 PAIR');drawPiece(s,bPts,p.sa,'BACK','CUT 1 PAIR');
- if(p.showGrain){addGrain(s,fx+gF.hip*.55,4,p.inseam*.65);addGrain(s,bx+gB.hip*.55,4,p.inseam*.65)}
- if(p.showNotches){addNotch(s,fx+gF.sideThigh[0], gF.kneeY*.96+1,'down','K');addNotch(s,fx+gF.sideHip[0],2,'down','H');addNotch(s,bx+gB.sideThigh[0],gB.kneeY*.96+1,'down','K');addNotch(s,bx+gB.sideHip[0],2,'down','H')}
- if(p.showDarts){if(p.frontDart){drawDart(s,fx+gF.waist*.55,1,4.5,0.7,'F DART')}if(p.backDarts){drawDart(s,bx+gB.waist*.42,1.7,5.0,1.0,'B DART');drawDart(s,bx+gB.waist*.7,1.7,4.5,0.8,'B DART')}}
- if(p.pocketBag)drawPocketBag(s,{...gF,sideHip:gF.hip+fx},'front',p);if(p.frontPocket==='slash'){line(s,fx+.7,2.0,fx+4.3,4.1,'#000');line(s,fx+4.3,4.1,fx+5.1,5.7,'#000');txt(s,fx+3,6.2,'SLASH POCKET',6,800)}else if(p.frontPocket==='utility'||p.frontPocket==='carpenter'){const pw=p.frontPocket==='carpenter'?5:4,ph=p.frontPocket==='carpenter'?6:4.5;rectIn(s,fx+gF.hip*.55,5,pw,ph,'#000','#fff','5 4');txt(s,fx+gF.hip*.55+pw/2,5+ph/2,'FRONT POCKET',6,800,'#000','middle')}
- if(p.backPocket!=='none'){const x=bx+gB.hip*.48,y=7;rectIn(s,x,y,4.2,3.8,'#000','#fff','5 4');txt(s,x+2.1,y+2,'BACK POCKET',6,800,'#000','middle');if(p.backPocket==='flap')rectIn(s,x-.1,y-.8,4.4,.8,'#000','#fff')}
- if(p.utilityPocket==='cargo'){const x=fx+gF.hip*.62,y=p.cargoHeight;const pts=[[x,y],[x+5,y],[x+5.2,y+5],[x-.2,y+5]];drawPiece(s,pts,p.sa,'CARGO','CUT 1 PAIR');if(p.showNotches)addNotch(s,x+2.5,y,'down')}
- if(p.fly)drawFly(s,gF,p);drawWaistband(s,p,Math.min(maxX-10,bx+gB.hip+gap),3.2);
- if(p.beltLoops){for(let i=0;i<6;i++){const x=fx+1+i*(Math.max(gF.waist,1.5)/5),y=.15;rectIn(s,x,y,.4,2.2,'#000','#fff');}}
- addScale(s,minX+1,maxY-1.5);return s}
-function teeGeometry(p,back=false){
- const chest=(p.chest+p.hemEase)/4, shoulder=p.shoulder/2, arm=p.armhole, len=p.length;
- const neckW=p.neck/2, neckDepth=back?1.25:p.neckDepth;
- const neckStart=[0,neckDepth], neckEnd=[neckW,0], shoulderEnd=[shoulder,1.0], armBottom=[chest,arm], hemOuter=[chest,len], hemFold=[0,len];
- const neck=sampleQuad(neckStart,[neckW*.28,back?0.25:neckDepth*.15],neckEnd,12);
- const armhole=sampleCubic(shoulderEnd,[shoulder*.95,2.1],[chest*.72,arm*.45],armBottom,16);
- const side=sampleQuad(armBottom,[chest+.25,(armBottom[1]+len)*.42],hemOuter,10);
- const pts=[...neck,...armhole.slice(1),...side.slice(1),hemFold,...sampleQuad(hemFold,[-.1,len*.5],neckStart,10).slice(1)];
- return {pts,chest,shoulder,arm,len,neckW,neckDepth};
-}
-function patternTee(){const p=state.values,gF=teeGeometry(p,false),gB=teeGeometry(p,true);const m=3,w=gF.chest+gB.chest+10,h=p.length+8;const s=svgRoot(w,h);txt(s,1,1,'NOCIV // T-SHIRT BLOCK',16,900);txt(s,1,1.45,`${p.fit.toUpperCase()} · CHEST ${p.chest}" · LENGTH ${p.length}" · ARMHOLE ${p.armhole}"`,8,700,'#555');const fx=1.5,bx=fx+gF.chest+5;const f=gF.pts.map(([x,y])=>[x+fx,y+2]),b=gB.pts.map(([x,y])=>[x+bx,y+2]);drawPiece(s,f,p.sa,'FRONT','CUT 1 ON FOLD',true);drawPiece(s,b,p.sa,'BACK','CUT 1 ON FOLD',true);if(p.showGrain){addGrain(s,fx+gF.chest*.55,5,p.length*.6);addGrain(s,bx+gB.chest*.55,5,p.length*.6)}if(p.showNotches){addNotch(s,fx+gF.shoulder*.55,1.15);addNotch(s,fx+gF.chest, p.armhole,'down');addNotch(s,bx+gB.chest,p.armhole,'down')}
- const sleeveX=bx+gB.chest+4,sleeveY=4,capH=Math.max(3.5,p.armhole*.45),sleeveW=Math.max(10,p.sleeve*1.8);const a=[sleeveX,sleeveY+capH],c1=[sleeveX+1.8,sleeveY],c2=[sleeveX+sleeveW-1.8,sleeveY],bpt=[sleeveX+sleeveW,sleeveY+capH];const curve=sampleCubic(a,c1,c2,bpt,18);const sleevePts=[[sleeveX,sleeveY+capH],...curve.slice(1,-1),[sleeveX+sleeveW,sleeveY+capH],[sleeveX+sleeveW,sleeveY+p.sleeve],[sleeveX,sleeveY+p.sleeve]];drawPiece(s,sleevePts,p.sa,'SLEEVE','CUT 2');if(p.showGrain)addGrain(s,sleeveX+sleeveW/2,sleeveY+capH+.5,p.sleeve*.7);if(p.showNotches){addNotch(s,sleeveX+sleeveW/2,sleeveY,'down','CAP');addNotch(s,sleeveX,sleeveY+capH*.7,'down')}
- const bandW=p.neck,bandH=.85;const collarX=sleeveX,collarY=sleeveY+p.sleeve+2;rectIn(s,collarX,collarY,bandW,bandH,'#000','#fff','5 4');txt(s,collarX+bandW/2,collarY+.55,'COLLAR BAND · CUT 1',6,800,'#000','middle');if(p.pocket){const px=fx+gF.chest*.52,py=8;rectIn(s,px,py,3.8,4.5,'#000','#fff','5 4');txt(s,px+1.9,py+2.2,'CHEST POCKET',6,800,'#000','middle')}
- addScale(s,1,h-1.5);return s}
-function patternCadet(){const p=state.values,w=30,h=14,s=svgRoot(w,h);txt(s,1,1,'NOCIV // CADET HAT',16,900);const panel=p.head/p.panels;for(let i=0;i<p.panels;i++){const x=1+i*(panel+.5),pts=[[x,3],[x+panel/2,2.2],[x+panel,3],[x+panel-.15,3+p.crown],[x+.15,3+p.crown]];drawPiece(s,pts,p.sa,`PANEL ${i+1}`,`CUT ${i<2?'2':'1'}`)}rectIn(s,1,8,p.bill,1.8,'#000','#fff');txt(s,1+p.bill/2,9,'BILL',7,900,'#000','middle');addScale(s,1,11);return s}
-function patternBag(type){const p=state.values,w=(p.width||14),h=(p.height||10),d=(p.depth||3),s=svgRoot(w*2+12,h+d+8);txt(s,1,1,`NOCIV // ${BASES[type].name}`,16,900);drawPiece(s,[[1,3],[1+w,3],[1+w,3+h],[1,3+h]],p.sa,'FRONT','CUT 1');drawPiece(s,[[w+7,3],[w+7+w,3],[w+7+w,3+h],[w+7,3+h]],p.sa,'BACK','CUT 1');if(d)drawPiece(s,[[1,5+h],[1+w,5+h],[1+w,5+h+d],[1,5+h+d]],p.sa,'GUSSET','CUT 1');addScale(s,1,h+d+6);return s}
-function renderPattern(){switch(state.base){case'pants':return patternPants();case'tshirt':return patternTee();case'cadet':return patternCadet();default:return patternBag(state.base)}}
-function renderFlat(){switch(state.base){case'pants':return flatPants();case'tshirt':return flatTee();default:return flatAccessory(state.base)}}
-function flatPants(){const p=state.values,s=svgRoot(32,34);txt(s,1,1,'TECH FLAT // PANTS',16,900);const x=4,y=3,hip=(p.hip+p.hipEase)/2,waist=(p.waist+p.waistEase)/2,hem=p.hem/2,len=p.rise+p.inseam;function leg(x0,back){const side=back?1.05:1, pts=[[x0,y],[x0+waist*.5,y+side],[x0+hip*.58,y+4],[x0+hem*.62,y+len],[x0+hem*.05,y+len],[x0,y+4]];mkPath(s,pathFromPoints(pts),'#000','#fff');line(s,x0+waist*.5,y+1,x0+hip*.58,y+4,'#000');line(s,x0+hip*.58,y+4,x0+hem*.62,y+len,'#000');if(p.frontPocket!=='none'&&!back){line(s,x0+1,y+4,x0+5,y+7,'#000');}if(back&&p.backPocket!=='none')rectIn(s,x0+hip*.18,y+7,4,4,'#000','#fff');if(p.utilityPocket==='cargo'&&!back)rectIn(s,x0+hip*.38,p.cargoHeight,5,5,'#000','#fff');txt(s,x0+hip*.3,y+len/2,back?'BACK':'FRONT',9,900,'#000','middle')}leg(x,false);leg(x+hip+5,true);if(p.beltLoops){for(let i=0;i<5;i++)rectIn(s,x+1+i*1.1,y-.3,.25,1.7,'#000','#fff')}txt(s,1,31,`WAIST ${p.waist}" · HIP ${p.hip}" · RISE ${p.rise}" · INSEAM ${p.inseam}" · ${p.style.toUpperCase()} / ${p.fit.toUpperCase()}`,7,700,'#555');addScale(s,28,30);return s}
-function flatTee(){const p=state.values,s=svgRoot(32,30);txt(s,1,1,'TECH FLAT // T-SHIRT',16,900);const x=4,y=3,w=(p.chest+p.hemEase)/2,h=p.length;const shoulder=p.shoulder/2;const body=`M ${S(x)} ${S(y+1)} L ${S(x+shoulder)} ${S(y)} L ${S(x+w)} ${S(y+2.5)} L ${S(x+w+2)} ${S(y+4)} L ${S(x+w+1)} ${S(y+7)} L ${S(x+w)} ${S(y+7)} L ${S(x+w)} ${S(y+h)} L ${S(x)} ${S(y+h)} Z`;mkPath(s,body,'#000','#fff');txt(s,x+w/2,y+h/2,'FRONT',10,900,'#000','middle');const sx=x+w+6;const sleeve=`M ${S(sx)} ${S(y+2.5)} Q ${S(sx+2)} ${S(y)} ${S(sx+7)} ${S(y+2.5)} L ${S(sx+8)} ${S(y+7)} L ${S(sx)} ${S(y+7)} Z`;mkPath(s,sleeve,'#000','#fff');txt(s,sx+4,y+5,'SLEEVE',7,900,'#000','middle');if(p.pocket)rectIn(s,x+w-5,y+6,3.5,4,'#000','#fff');txt(s,1,28,`${p.fit.toUpperCase()} · CHEST ${p.chest}" · LENGTH ${p.length}" · COLLAR ${p.collar.toUpperCase()}`,7,700,'#555');addScale(s,28,27);return s}
-function flatAccessory(type){const p=state.values,s=svgRoot(30,24);txt(s,1,1,`TECH FLAT // ${BASES[type].name}`,16,900);const w=p.width||12,h=p.height||10;rectIn(s,3,3,w,h,'#000','#fff');if(p.frontPocket)rectIn(s,4,5,w-2,2,'#000','#fff');if(p.flap){const pts=[[3,3],[3+w,3],[3+w-1,5],[4,5]];mkPath(s,pathFromPoints(pts),'#000','#fff')}txt(s,3+w/2,3+h/2,BASES[type].name,9,900,'#000','middle');addScale(s,1,20);return s}
-function fitValidation(){const p=state.values;if(state.base==='pants'){const hipBlock=p.hip+p.hipEase,thighBlock=p.thigh+p.thighEase,kneeBlock=p.knee+p.kneeEase;return [`HIP EASE ${p.hipEase.toFixed(2)}"`,hipBlock>=p.hip?'OK':'CHECK','THIGH EASE '+p.thighEase.toFixed(2)+'"',thighBlock>=p.thigh?'OK':'CHECK','KNEE EASE '+p.kneeEase.toFixed(2)+'"',kneeBlock>=p.knee?'OK':'CHECK',`RISE ${p.rise.toFixed(2)}"`,`INSEAM ${p.inseam.toFixed(2)}"`]}return [`BODY EASE ${p.hemEase.toFixed(2)}"`,`CHEST ${p.chest.toFixed(2)}"`,`ARMHOLE ${p.armhole.toFixed(2)}"`,`NECK ${p.neck.toFixed(2)}"`]}
-function render(){const c=document.getElementById('canvas');c.innerHTML='';const s=state.mode==='pattern'?renderPattern():renderFlat();c.appendChild(s);document.getElementById('status').textContent=`${BASES[state.base].name} · 1 IN = 72 SVG UNITS · ${fitValidation().join(' · ')}`}
-function downloadSVG(){const s=state.mode==='pattern'?renderPattern():renderFlat();const src=new XMLSerializer().serializeToString(s);const blob=new Blob([src],{type:'image/svg+xml'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`nociv-${state.base}-${state.mode}-1to1.svg`;a.click();URL.revokeObjectURL(a.href)}
-function downloadTechPack(){const data={brand:'NOCIV',tool:'Clothing Build',version:'3.0',base:state.base,mode:state.mode,measurements:state.values,validation:fitValidation(),generatedAt:new Date().toISOString(),note:'Parametric pattern prototype. Produce a toile/test garment and validate measurements before production.'};const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`nociv-${state.base}-tech-pack.json`;a.click();URL.revokeObjectURL(a.href)}
-function openPrint(){const modal=document.getElementById('modal');modal.classList.remove('hidden');modal.classList.add('flex');const svg=state.mode==='pattern'?renderPattern():renderFlat();const vb=svg.viewBox.baseVal;const pw=7.5*72,ph=10*72,cols=Math.ceil(vb.width/pw),rows=Math.ceil(vb.height/ph);document.getElementById('printSummary').textContent=`${cols*rows} TILES · ${cols} COLS × ${rows} ROWS · ${BASES[state.base].name} · 1:1`;const wrap=document.getElementById('tilePreview');wrap.innerHTML='';for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){const card=el('div',{class:'border2 bg-gray-50 p-2'},`<div class="mono text-[10px] font-bold mb-2">TILE ${String.fromCharCode(65+r)}${c+1}</div><div class="h-48 border border-dashed border-gray-400 flex items-center justify-center mono text-[10px]">1:1 PATTERN TILE</div>`);wrap.appendChild(card)}}
-function closePrint(){const modal=document.getElementById('modal');modal.classList.add('hidden');modal.classList.remove('flex')}
-function browserPrint(){const out=document.getElementById('printout');out.innerHTML='';const svg=state.mode==='pattern'?renderPattern():renderFlat();const vb=svg.viewBox.baseVal;const pw=7.5*72,ph=10*72,cols=Math.ceil(vb.width/pw),rows=Math.ceil(vb.height/ph);for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){const page=document.createElement('div');page.className='page';const title=document.createElement('div');title.className='mono';title.style.fontSize='10px';title.style.fontWeight='800';title.style.marginBottom='6px';title.textContent=`NOCIV // ${BASES[state.base].name} // TILE ${String.fromCharCode(65+r)}${c+1} // 1:1`;page.appendChild(title);const clone=svg.cloneNode(true);clone.setAttribute('width','7.5in');clone.setAttribute('height','10in');clone.setAttribute('viewBox',`${c*pw} ${r*ph} ${pw} ${ph}`);page.appendChild(clone);out.appendChild(page)}closePrint();window.print()}
-renderBaseButtons();renderControls();render();
 
+const defaults = {
+  pants: { waist: 32, hip: 42, rise: 11.5, inseam: 30, thigh: 25, knee: 18, hem: 16, waistEase: 1.0, hipEase: 3.0, thighEase: 2.0, style: 'workwear', fit: 'straight', frontPocket: 'slash', backPocket: 'square', utilityPocket: 'cargo', cargoHeight: 12, beltLoops: true, fly: true, pocketBag: true, sa: 0.5, showGrain: true, showNotches: true, showLabels: true },
+  tshirt: { chest: 40, length: 28, shoulder: 18, sleeve: 8.5, armhole: 9.5, neck: 16, neckDepth: 3.5, hemEase: 4.0, fit: 'regular', collar: 'crew', placket: false, pocket: true, sa: 0.5, showGrain: true, showNotches: true, showLabels: true },
+  cadet: { head: 23, crown: 3.5, bill: 2.5, panels: 6, sa: 0.5 },
+  tote: { width: 16, height: 14, depth: 4, strap: 24, sa: 0.5 },
+  fanny: { width: 11, height: 6, depth: 3, strap: 36, sa: 0.5 }
+};
+
+const presetsPants = {
+  S: { waist: 28, hip: 37, rise: 10.5, inseam: 29, thigh: 22, knee: 16, hem: 14.5 },
+  M: { waist: 32, hip: 41, rise: 11.5, inseam: 30, thigh: 25, knee: 18, hem: 16 },
+  L: { waist: 36, hip: 45, rise: 12.25, inseam: 31, thigh: 27, knee: 19.5, hem: 17 },
+  XL: { waist: 40, hip: 49, rise: 13.0, inseam: 31, thigh: 29, knee: 21, hem: 18 }
+};
+
+const presetsTee = {
+  S: { chest: 36, length: 26, shoulder: 16.5, sleeve: 7.5, armhole: 8.5, neck: 15 },
+  M: { chest: 40, length: 28, shoulder: 18.0, sleeve: 8.5, armhole: 9.5, neck: 16 },
+  L: { chest: 44, length: 29.5, shoulder: 19.5, sleeve: 9.0, armhole: 10.0, neck: 17 },
+  XL: { chest: 48, length: 31, shoulder: 21.0, sleeve: 9.5, armhole: 11.0, neck: 18 }
+};
+
+const state = {
+  base: 'pants',
+  mode: 'flat', // 'flat' or 'pattern'
+  zoom: 1.0,
+  showBodyOverlay: true,
+  values: JSON.parse(JSON.stringify(defaults.pants))
+};
+
+const NS = 'http://www.w3.org/2000/svg';
+
+// --- HELPER FUNCTIONS ---
+function S(x) { return x * 72; } // Scale inches to SVG DPI pixels
+
+function el(tag, attrs = {}, html = '') {
+  const n = document.createElement(tag);
+  Object.entries(attrs).forEach(([k, v]) => n.setAttribute(k, v));
+  n.innerHTML = html;
+  return n;
+}
+
+function renderBaseButtons() {
+  const wrap = document.getElementById('baseButtons');
+  wrap.innerHTML = '';
+  Object.entries(BASES).forEach(([k, b]) => {
+    const btn = el('button', {
+      class: `btn text-left p-2 ${state.base === k ? 'active' : ''}`,
+      onclick: `selectBase('${k}')`
+    }, `<b>${b.name}</b><span class="block mini opacity-70">${b.tag}</span>`);
+    wrap.appendChild(btn);
+  });
+}
+
+function selectBase(k) {
+  state.base = k;
+  state.values = JSON.parse(JSON.stringify(defaults[k]));
+  renderBaseButtons();
+  renderControls();
+  render();
+}
+
+function sliderField(key, label, min, max, step = 0.25, unit = 'in') {
+  const v = state.values[key];
+  return `<div class="mb-4">
+    <div class="flex justify-between mb-1">
+      <span class="mini font-bold uppercase">${label}</span>
+      <span id="read-${key}" class="mono text-xs font-black">${Number(v).toFixed(step < 1 ? 2 : 1)}${unit}</span>
+    </div>
+    <input type="range" min="${min}" max="${max}" step="${step}" value="${v}" oninput="setVal('${key}',this.value)" class="w-full">
+    <div class="flex justify-between mini text-gray-500"><span>${min}${unit}</span><span>${max}${unit}</span></div>
+  </div>`;
+}
+
+function selectField(key, label, opts) {
+  return `<label class="block mb-3">
+    <span class="mini font-bold uppercase block mb-1">${label}</span>
+    <select class="field" onchange="setVal('${key}',this.value)">
+      ${opts.map(([v, t]) => `<option value="${v}" ${state.values[key] === v ? 'selected' : ''}>${t}</option>`).join('')}
+    </select>
+  </label>`;
+}
+
+function boolField(key, label) {
+  return `<label class="flex items-center gap-2 mb-3 mini font-bold cursor-pointer">
+    <input class="check w-4 h-4" type="checkbox" ${state.values[key] ? 'checked' : ''} onchange="setVal('${key}',this.checked)">${label}
+  </label>`;
+}
+
+function presetButtons(kind) {
+  return `<div class="border2 bg-white p-3 mb-4 shadow1">
+    <div class="section-title mb-2">ASTM Baseline Size</div>
+    <div class="grid grid-cols-4 gap-1">
+      ${['S', 'M', 'L', 'XL'].map(s => `<button class="btn py-1 text-xs" onclick="applyPreset('${s}')">${s}</button>`).join('')}
+    </div>
+  </div>`;
+}
+
+function renderControls() {
+  const c = document.getElementById('controls');
+  let h = '';
+  if (state.base === 'pants') {
+    h += presetButtons('pants');
+    h += `<div class="section-title mb-2">2. Body Baseline (Inches)</div>`;
+    h += sliderField('waist', 'Natural Waist', 24, 56, .25);
+    h += sliderField('hip', 'Seat / Hip Circumference', 30, 64, .25);
+    h += sliderField('rise', 'Front Rise', 8, 16, .25);
+    h += sliderField('inseam', 'Inseam Length', 24, 36, .25);
+    h += sliderField('thigh', 'Thigh Circumference', 18, 36, .25);
+    h += sliderField('knee', 'Knee Circumference', 12, 28, .25);
+    h += sliderField('hem', 'Leg Opening (Hem)', 10, 26, .25);
+
+    h += `<div class="section-title mt-5 mb-2">3. Fit &amp; Ease Allowance</div>`;
+    h += sliderField('waistEase', 'Waist Ease', 0, 4, .25);
+    h += sliderField('hipEase', 'Hip / Seat Ease', 0, 8, .25);
+    h += sliderField('thighEase', 'Thigh Ease', 0, 6, .25);
+
+    h += `<div class="section-title mt-5 mb-2">4. Style Architecture</div>`;
+    h += selectField('style', 'Garment Style', [['workwear', 'Workwear Utility'], ['field', 'Field Cargo'], ['clean', 'Tailored Minimal']]);
+    h += selectField('fit', 'Leg Fit Cut', [['straight', 'Straight Leg'], ['wide', 'Wide Cut'], ['tapered', 'Tapered Cut']]);
+    h += selectField('frontPocket', 'Front Pocket Style', [['slash', 'Slash Pocket'], ['utility', 'Utility Patch'], ['none', 'None']]);
+    h += selectField('backPocket', 'Back Pocket', [['square', 'Square Patch'], ['none', 'None']]);
+    h += selectField('utilityPocket', 'Cargo Pocket', [['cargo', 'Cargo Pocket Side'], ['none', 'None']]);
+    if (state.values.utilityPocket === 'cargo') h += sliderField('cargoHeight', 'Cargo Height Position', 8, 18, .5);
+
+    h += `<div class="section-title mt-5 mb-2">5. Construction &amp; Pattern</div>`;
+    h += boolField('beltLoops', 'Belt Loops');
+    h += boolField('fly', 'Zipper Fly Construction');
+    h += sliderField('sa', 'Seam Allowance', 0, .75, .125);
+  } else if (state.base === 'tshirt') {
+    h += presetButtons('tshirt');
+    h += `<div class="section-title mb-2">2. Body Baseline (Inches)</div>`;
+    h += sliderField('chest', 'Chest Circumference', 30, 60, .25);
+    h += sliderField('length', 'Garment Length', 22, 36, .25);
+    h += sliderField('shoulder', 'Cross Shoulder Width', 14, 24, .25);
+    h += sliderField('sleeve', 'Sleeve Length', 5, 14, .25);
+    h += sliderField('armhole', 'Armhole Depth', 7, 14, .25);
+    h += sliderField('neck', 'Neck Circumference', 13, 22, .25);
+
+    h += `<div class="section-title mt-5 mb-2">3. Ease &amp; Styling</div>`;
+    h += sliderField('hemEase', 'Body Chest Ease', 1, 10, .25);
+    h += selectField('fit', 'Body Silhouette', [['regular', 'Regular Fit'], ['boxy', 'Boxy Cut'], ['oversized', 'Oversized']]);
+    h += boolField('pocket', 'Chest Patch Pocket');
+    h += sliderField('sa', 'Seam Allowance', 0, .75, .125);
+  } else {
+    h += `<div class="section-title mb-2">Accessory Geometry</div>`;
+    if (state.base === 'cadet') {
+      h += sliderField('head', 'Head Circumference', 20, 26, .25);
+      h += sliderField('crown', 'Crown Height', 2.5, 5, .25);
+      h += sliderField('bill', 'Bill Length', 1.5, 4, .25);
+    } else {
+      h += sliderField('width', 'Width', 8, 24, .5);
+      h += sliderField('height', 'Height', 6, 20, .5);
+      h += sliderField('depth', 'Depth', 1, 8, .5);
+      h += sliderField('strap', 'Strap Length', 12, 54, 1);
+    }
+    h += sliderField('sa', 'Seam Allowance', 0, .75, .125);
+  }
+  c.innerHTML = h;
+}
+
+function setVal(k, v) {
+  state.values[k] = typeof v === 'boolean' ? v : (isNaN(parseFloat(v)) ? v : parseFloat(v));
+  const r = document.getElementById('read-' + k);
+  if (r) r.textContent = (typeof v === 'boolean' ? '' : Number(v).toFixed(Number(v) % 1 ? 2 : 1) + 'in');
+  render();
+}
+
+function applyPreset(s) {
+  const src = state.base === 'tshirt' ? presetsTee[s] : presetsPants[s];
+  if (src) Object.assign(state.values, src);
+  renderControls();
+  render();
+}
+
+function resetAll() {
+  state.values = JSON.parse(JSON.stringify(defaults[state.base]));
+  renderControls();
+  render();
+}
+
+function setMode(m) {
+  state.mode = m;
+  document.getElementById('modeFlat').classList.toggle('active', m === 'flat');
+  document.getElementById('modePattern').classList.toggle('active', m === 'pattern');
+  document.getElementById('legendText').textContent = m === 'flat' 
+    ? 'TECH FLAT VIEW · BLACK = OUTER GARMENT · BLUE DASH = 2D BODY BASELINE'
+    : 'PATTERN PIECES · BLACK = CUT LINE · RED DASH = SEAM LINE · BLUE = GRAIN/FOLD';
+  render();
+}
+
+function zoom(d) {
+  state.zoom = Math.max(.4, Math.min(2.5, state.zoom + d));
+  document.getElementById('zoomLabel').textContent = Math.round(state.zoom * 100) + '%';
+  render();
+}
+
+function resetZoom() {
+  state.zoom = 1;
+  document.getElementById('zoomLabel').textContent = '100%';
+  render();
+}
+
+function toggleBodyOverlay(v) {
+  state.showBodyOverlay = v;
+  render();
+}
+
+// --- VECTOR SVG DRAWING UTILITIES ---
+function svgRoot(w, h) {
+  const s = document.createElementNS(NS, 'svg');
+  s.setAttribute('xmlns', NS);
+  s.setAttribute('width', `${w * state.zoom * 22}px`);
+  s.setAttribute('height', `${h * state.zoom * 22}px`);
+  s.setAttribute('viewBox', `0 0 ${w} ${h}`);
+  s.style.maxWidth = 'none';
+  return s;
+}
+
+function mkPath(svg, d, stroke = '#000', fill = 'none', dash = '', strokeWidth = 0.08) {
+  const n = document.createElementNS(NS, 'path');
+  n.setAttribute('d', d);
+  n.setAttribute('stroke', stroke);
+  n.setAttribute('fill', fill);
+  n.setAttribute('stroke-width', strokeWidth);
+  if (dash) n.setAttribute('stroke-dasharray', dash);
+  svg.appendChild(n);
+  return n;
+}
+
+function line(svg, x1, y1, x2, y2, stroke = '#000', dash = '', strokeWidth = 0.06) {
+  const n = document.createElementNS(NS, 'line');
+  n.setAttribute('x1', x1); n.setAttribute('y1', y1);
+  n.setAttribute('x2', x2); n.setAttribute('y2', y2);
+  n.setAttribute('stroke', stroke);
+  n.setAttribute('stroke-width', strokeWidth);
+  if (dash) n.setAttribute('stroke-dasharray', dash);
+  svg.appendChild(n);
+  return n;
+}
+
+function txt(svg, x, y, t, size = 0.4, weight = 700, fill = '#000', anchor = 'start') {
+  const n = document.createElementNS(NS, 'text');
+  n.setAttribute('x', x); n.setAttribute('y', y);
+  n.setAttribute('font-family', 'JetBrains Mono, monospace');
+  n.setAttribute('font-size', size);
+  n.setAttribute('font-weight', weight);
+  n.setAttribute('fill', fill);
+  n.setAttribute('text-anchor', anchor);
+  n.textContent = t;
+  svg.appendChild(n);
+  return n;
+}
+
+function rectIn(svg, x, y, w, h, stroke = '#000', fill = 'none', dash = '') {
+  const n = document.createElementNS(NS, 'rect');
+  n.setAttribute('x', x); n.setAttribute('y', y);
+  n.setAttribute('width', w); n.setAttribute('height', h);
+  n.setAttribute('stroke', stroke); n.setAttribute('fill', fill);
+  n.setAttribute('stroke-width', 0.06);
+  if (dash) n.setAttribute('stroke-dasharray', dash);
+  svg.appendChild(n);
+  return n;
+}
+
+function addScaleSquare(svg, x, y) {
+  rectIn(svg, x, y, 1, 1, '#000', '#fff6bf');
+  txt(svg, x + 0.5, y + 0.45, '1 INCH', 0.22, 900, '#000', 'middle');
+  txt(svg, x + 0.5, y + 0.75, 'SCALE CHECK', 0.16, 700, '#000', 'middle');
+}
+
+function pathFromPoints(points) {
+  return 'M ' + points.map(p => `${p[0].toFixed(3)} ${p[1].toFixed(3)}`).join(' L ') + ' Z';
+}
+
+// --- DYNAMIC TECH FLAT RENDERING ENGINE ---
+function flatPants() {
+  const p = state.values;
+  const s = svgRoot(28, 36);
+  txt(s, 1, 1.2, 'NOCIV // TECHNICAL FLAT - PANTS', 0.7, 900);
+  txt(s, 1, 1.8, `${p.style.toUpperCase()} · ${p.fit.toUpperCase()} LEG · WAIST: ${p.waist}" (+${p.waistEase}" EASE)`, 0.35, 700, '#555');
+
+  const gWaist = (p.waist + p.waistEase) / 4;
+  const gHip = (p.hip + p.hipEase) / 4;
+  const gThigh = (p.thigh + p.thighEase) / 4;
+  const gHem = p.hem / 4;
+  const bWaist = p.waist / 4;
+  const bHip = p.hip / 4;
+  const bThigh = p.thigh / 4;
+
+  const len = p.rise + p.inseam;
+  const sy = 4;
+
+  // Front View
+  const fx = 6;
+  const fPts = [
+    [fx, sy],
+    [fx + gWaist, sy + 0.2],
+    [fx + gHip, sy + p.rise * 0.4],
+    [fx + gThigh, sy + p.rise],
+    [fx + gHem, sy + len],
+    [fx + 0.3, sy + len],
+    [fx, sy + p.rise]
+  ];
+  mkPath(s, pathFromPoints(fPts), '#000', '#fff', '', 0.1);
+
+  // 2D Body Baseline Space Overlay
+  if (state.showBodyOverlay) {
+    const bPts = [
+      [fx, sy],
+      [fx + bWaist, sy + 0.2],
+      [fx + bHip, sy + p.rise * 0.4],
+      [fx + bThigh, sy + p.rise],
+      [fx + gHem * 0.8, sy + len],
+      [fx + 0.2, sy + len],
+      [fx, sy + p.rise]
+    ];
+    mkPath(s, pathFromPoints(bPts), '#2563EB', 'rgba(37,99,235,0.08)', '0.15 0.15', 0.06);
+    txt(s, fx + gWaist + 0.3, sy + 0.5, `BODY BASELINE`, 0.25, 700, '#2563EB');
+    txt(s, fx + gWaist + 0.3, sy + 0.9, `EASE: +${p.waistEase}" WAIST / +${p.hipEase}" HIP`, 0.22, 500, '#2563EB');
+  }
+
+  // Details
+  line(s, fx, sy + 0.8, fx + gWaist, sy + 0.8, '#000', '', 0.08); // Waistband
+  line(s, fx, sy + 0.8, fx, sy + p.rise, '#000', '', 0.08); // Fly seam
+  if (p.frontPocket === 'slash') {
+    line(s, fx + 0.4, sy + 0.8, fx + gWaist - 0.2, sy + 2.5, '#000', '', 0.08);
+  } else if (p.frontPocket === 'utility') {
+    rectIn(s, fx + 0.5, sy + 1.2, gWaist - 0.8, 2.2, '#000', 'none');
+  }
+  if (p.utilityPocket === 'cargo') {
+    rectIn(s, fx + gThigh - 1.2, sy + p.cargoHeight * 0.8, 2.2, 2.8, '#000', 'none');
+    txt(s, fx + gThigh - 0.1, sy + p.cargoHeight * 0.8 + 1.4, 'CARGO', 0.2, 700, '#000', 'middle');
+  }
+  txt(s, fx + gHip / 2, sy + len + 1, 'FRONT VIEW', 0.4, 900, '#000', 'middle');
+
+  // Back View
+  const bx = 18;
+  const bPtsBack = [
+    [bx, sy],
+    [bx + gWaist, sy + 0.4],
+    [bx + gHip, sy + p.rise * 0.4],
+    [bx + gThigh, sy + p.rise],
+    [bx + gHem, sy + len],
+    [bx + 0.3, sy + len],
+    [bx, sy + p.rise]
+  ];
+  mkPath(s, pathFromPoints(bPtsBack), '#000', '#fff', '', 0.1);
+  line(s, bx, sy + 0.8, bx + gWaist, sy + 0.8, '#000', '', 0.08);
+  if (p.backPocket === 'square') {
+    rectIn(s, bx + 0.6, sy + 2.0, 1.8, 2.0, '#000', 'none');
+  }
+  txt(s, bx + gHip / 2, sy + len + 1, 'BACK VIEW', 0.4, 900, '#000', 'middle');
+
+  addScaleSquare(s, 1, 32);
+  return s;
+}
+
+function flatTee() {
+  const p = state.values;
+  const s = svgRoot(28, 32);
+  txt(s, 1, 1.2, 'NOCIV // TECHNICAL FLAT - T-SHIRT', 0.7, 900);
+  txt(s, 1, 1.8, `${p.fit.toUpperCase()} CUT · CHEST: ${p.chest}" (+${p.hemEase}" EASE) · SHOULDER: ${p.shoulder}"`, 0.35, 700, '#555');
+
+  const gChest = (p.chest + p.hemEase) / 4;
+  const gShoulder = p.shoulder / 2;
+  const bChest = p.chest / 4;
+  const sy = 4, fx = 6;
+
+  // Front View
+  const fPts = [
+    [fx, sy + 0.8],
+    [fx + p.neck / 4, sy],
+    [fx + gShoulder, sy + 0.6],
+    [fx + gChest, sy + p.armhole * 0.7],
+    [fx + gChest, sy + p.length * 0.7],
+    [fx, sy + p.length * 0.7]
+  ];
+  mkPath(s, pathFromPoints(fPts), '#000', '#fff', '', 0.1);
+
+  // Body Baseline
+  if (state.showBodyOverlay) {
+    const bPts = [
+      [fx, sy + 0.8],
+      [fx + p.neck / 4, sy],
+      [fx + gShoulder * 0.95, sy + 0.6],
+      [fx + bChest, sy + p.armhole * 0.7],
+      [fx + bChest, sy + p.length * 0.7],
+      [fx, sy + p.length * 0.7]
+    ];
+    mkPath(s, pathFromPoints(bPts), '#2563EB', 'rgba(37,99,235,0.08)', '0.15 0.15', 0.06);
+    txt(s, fx + gChest + 0.3, sy + 2, `2D BODY BASELINE`, 0.25, 700, '#2563EB');
+    txt(s, fx + gChest + 0.3, sy + 2.4, `CHEST EASE: +${p.hemEase}"`, 0.22, 500, '#2563EB');
+  }
+
+  // Sleeve & Neck
+  line(s, fx + gShoulder, sy + 0.6, fx + gShoulder + p.sleeve * 0.6, sy + p.sleeve * 0.5, '#000', '', 0.08);
+  line(s, fx + gChest, sy + p.armhole * 0.7, fx + gShoulder + p.sleeve * 0.6, sy + p.sleeve * 0.5, '#000', '', 0.08);
+
+  if (p.pocket) {
+    rectIn(s, fx + 1.0, sy + 2.5, 1.5, 1.8, '#000', 'none');
+  }
+
+  txt(s, fx + gChest / 2, sy + p.length * 0.7 + 1, 'FRONT VIEW (FOLD)', 0.4, 900, '#000', 'middle');
+  addScaleSquare(s, 1, 28);
+  return s;
+}
+
+function flatAccessory() {
+  const p = state.values;
+  const s = svgRoot(24, 24);
+  txt(s, 1, 1.2, `NOCIV // TECHNICAL FLAT - ${BASES[state.base].name}`, 0.7, 900);
+  rectIn(s, 4, 4, p.width || 12, p.height || 10, '#000', '#fff');
+  txt(s, 4 + (p.width || 12) / 2, 4 + (p.height || 10) / 2, `${state.base.toUpperCase()} BLOCK`, 0.4, 900, '#000', 'middle');
+  addScaleSquare(s, 1, 20);
+  return s;
+}
+
+// --- PATTERN PIECES RENDERER ---
+function drawPatternPiece(svg, pts, sa, label, cutQty = 'CUT 1') {
+  mkPath(svg, pathFromPoints(pts), '#DC2626', '#fff', '0.15 0.15', 0.06); // Net line
+  txt(svg, (pts[0][0] + pts[1][0]) / 2, (pts[0][1] + pts[2][1]) / 2, label, 0.4, 900, '#000', 'middle');
+  txt(svg, (pts[0][0] + pts[1][0]) / 2, (pts[0][1] + pts[2][1]) / 2 + 0.4, cutQty, 0.25, 700, '#DC2626', 'middle');
+}
+
+function patternPants() {
+  const p = state.values;
+  const s = svgRoot(36, 42);
+  txt(s, 1, 1.2, 'NOCIV // PANTS PATTERN BLOCK', 0.7, 900);
+
+  const w = (p.waist + p.waistEase) / 4;
+  const h = (p.hip + p.hipEase) / 4;
+  const len = p.rise + p.inseam;
+
+  // Front Panel
+  const fPts = [[2, 3], [2 + w, 3], [2 + h, 3 + p.rise], [2 + p.hem / 4, 3 + len], [2, 3 + len]];
+  drawPatternPiece(s, fPts, p.sa, 'FRONT LEG', 'CUT 1 PAIR');
+
+  // Back Panel
+  const bPts = [[16, 3], [16 + w + 0.5, 3], [16 + h + 1, 3 + p.rise], [16 + p.hem / 4 + 0.5, 3 + len], [16, 3 + len]];
+  drawPatternPiece(s, bPts, p.sa, 'BACK LEG', 'CUT 1 PAIR');
+
+  addScaleSquare(s, 1, 38);
+  return s;
+}
+
+function patternTee() {
+  const p = state.values;
+  const s = svgRoot(34, 36);
+  txt(s, 1, 1.2, 'NOCIV // T-SHIRT PATTERN BLOCK', 0.7, 900);
+
+  const c = (p.chest + p.hemEase) / 4;
+  const fPts = [[2, 3], [2 + c, 3], [2 + c, 3 + p.length], [2, 3 + p.length]];
+  drawPatternPiece(s, fPts, p.sa, 'FRONT TEE', 'CUT 1 ON FOLD');
+
+  addScaleSquare(s, 1, 32);
+  return s;
+}
+
+// --- MAIN RENDER DISPATCHER ---
+function render() {
+  const canvas = document.getElementById('canvas');
+  canvas.innerHTML = '';
+  let svg;
+  if (state.mode === 'flat') {
+    if (state.base === 'pants') svg = flatPants();
+    else if (state.base === 'tshirt') svg = flatTee();
+    else svg = flatAccessory();
+  } else {
+    if (state.base === 'pants') svg = patternPants();
+    else if (state.base === 'tshirt') svg = patternTee();
+    else svg = flatAccessory();
+  }
+  canvas.appendChild(svg);
+  updateTileEstimate();
+}
+
+function updateTileEstimate() {
+  // Estimate Letter pages (7.5" x 10" printable printable area)
+  const estTiles = state.mode === 'flat' ? '1 Page (Design Overview)' : '8 - 12 Pages (Full Scale Tiled)';
+  document.getElementById('tileSizeEst').textContent = `ESTIMATED TILES: ${estTiles}`;
+}
+
+// --- PRINT & TILING ENGINE ---
+function openPrint() {
+  document.getElementById('modal').classList.remove('hidden');
+  document.getElementById('modal').classList.add('flex');
+
+  const summary = document.getElementById('printSummary');
+  const preview = document.getElementById('tilePreview');
+  summary.innerHTML = `OUTPUT CONFIG: US LETTER (8.5" × 11") · SCALE: 100% · BASE: ${BASES[state.base].name} (${state.mode.toUpperCase()})`;
+
+  preview.innerHTML = '';
+  const cols = 3, rows = 3; // Simulated 3x3 print layout grid
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const tileLabel = String.fromCharCode(65 + r) + (c + 1);
+      const box = el('div', { class: 'border2 p-3 bg-white relative h-36 flex flex-col justify-between mono text-xs' }, `
+        <div class="flex justify-between font-bold"><span>TILE ${tileLabel}</span><span>100%</span></div>
+        <div class="text-center text-gray-400 my-auto">✦ CROSSHAIR ALIGN ✦</div>
+        <div class="text-[9px] text-gray-500">ROW ${r + 1} COL ${c + 1} · TRIM MARGIN</div>
+      `);
+      preview.appendChild(box);
+    }
+  }
+}
+
+function closePrint() {
+  document.getElementById('modal').classList.add('hidden');
+  document.getElementById('modal').classList.remove('flex');
+}
+
+function browserPrint() {
+  const printContainer = document.getElementById('printout');
+  printContainer.innerHTML = '';
+
+  // Generate 4 tiled printable pages with alignment marks
+  for (let i = 0; i < 4; i++) {
+    const page = el('div', { class: 'print-page mono' });
+    const label = 'TILE ' + String.fromCharCode(65 + Math.floor(i / 2)) + ((i % 2) + 1);
+    page.innerHTML = `
+      <div style="border:2px solid #000; height:100%; padding:0.3in; position:relative;">
+        <div style="display:flex; justify-between; font-weight:bold; font-size:12px;">
+          <span>NOCIV // ${BASES[state.base].name}</span>
+          <span>${label} (PAGE ${i + 1} OF 4)</span>
+        </div>
+        <div style="position:absolute; top:0.4in; right:0.4in; border:1px solid #000; padding:4px; font-size:9px;">
+          1 INCH SCALE CHECK<br><div style="width:1in; height:1in; border:1px solid #000; margin-top:2px; text-align:center; line-height:1in;">1 IN</div>
+        </div>
+        <div style="position:absolute; bottom:0.4in; left:0.4in; font-size:10px;">
+          ALIGN CROSSHAIRS &amp; TAPE TO ADJACENT PAGES · SCALE = 100%
+        </div>
+      </div>
+    `;
+    printContainer.appendChild(page);
+  }
+
+  window.print();
+}
+
+// --- GUIDE MODAL ---
+function openGuide() {
+  document.getElementById('guideModal').classList.remove('hidden');
+  document.getElementById('guideModal').classList.add('flex');
+}
+function closeGuide() {
+  document.getElementById('guideModal').classList.add('hidden');
+  document.getElementById('guideModal').classList.remove('flex');
+}
+
+// --- EXPORT FUNCTIONS ---
+function downloadSVG() {
+  const svgEl = document.querySelector('#canvas svg');
+  if (!svgEl) return;
+  const blob = new Blob([svgEl.outerHTML], { type: 'image/svg+xml' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `NOCIV-${state.base}-${state.mode}.svg`;
+  a.click();
+}
+
+function downloadTechPack() {
+  const data = {
+    brand: "NOCIV",
+    garment: BASES[state.base].name,
+    specifications: state.values,
+    timestamp: new Date().toISOString()
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `NOCIV-TechPack-${state.base}.json`;
+  a.click();
+}
+
+// --- INITIALIZATION ---
+window.addEventListener('DOMContentLoaded', () => {
+  renderBaseButtons();
+  renderControls();
+  render();
+});
 </script>
 </body>
 </html>
