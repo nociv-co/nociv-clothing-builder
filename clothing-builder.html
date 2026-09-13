@@ -8,32 +8,45 @@
 </head>
 <body>
   <div id="app">
-    <!-- 1. Interactive Control Panel -->
     <aside id="sidebar">
       <h1>NOCIV Engine V4</h1>
       
-      <section id="step-selector">
-        <label for="archetype">Select Garment</label>
+      <div class="control-group">
+        <label for="archetype">Garment Archetype</label>
         <select id="archetype">
           <option value="pants">Pants</option>
           <option value="tee">T-Shirt</option>
         </select>
-      </section>
+      </div>
 
-      <!-- Dynamic Form Container Populated by JS -->
+      <div class="control-group">
+        <label for="input-mode">Measurement Mode</label>
+        <select id="input-mode">
+          <option value="body">Measure Body</option>
+          <option value="garment_flat">Copy Existing Garment</option>
+        </select>
+      </div>
+
       <form id="measurement-form">
-        <div id="input-fields"></div>
-        <button type="submit" id="btn-generate">Draft Pattern</button>
+        <div id="dynamic-inputs">
+          <label>Waist (inches)</label>
+          <input type="number" name="waist" value="32" step="0.25" required>
+          
+          <label>Hip (inches)</label>
+          <input type="number" name="hip" value="40" step="0.25" required>
+          
+          <label>Inseam / Length (inches)</label>
+          <input type="number" name="length" value="30" step="0.25" required>
+        </div>
+        <button type="submit" id="btn-generate">Generate Draft</button>
       </form>
     </aside>
 
-    <!-- 2. Pattern Preview & Metrics Engine -->
     <main id="workspace">
       <header id="confidence-header">
-        <span id="fit-score">Confidence Score: --</span>
+        <div id="fit-score">Confidence Score: --</div>
       </header>
 
-      <!-- SVG Path Output Target -->
       <div id="canvas-container">
         <svg id="pattern-canvas" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000"></svg>
       </div>
@@ -44,7 +57,6 @@
     </main>
   </div>
 
-  <!-- 3. Import Main JavaScript Entry Point -->
   <script type="module" src="./src/main.js"></script>
 </body>
 </html>
