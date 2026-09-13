@@ -3,60 +3,158 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>NOCIV V4 Pattern Generator</title>
+  <title>NOCIV // Industrial Parametric Pattern Drafting Engine</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./src/styles.css">
 </head>
-<body>
-  <div id="app">
-    <aside id="sidebar">
-      <h1>NOCIV Engine V4</h1>
-      
-      <div class="control-group">
-        <label for="archetype">Garment Archetype</label>
-        <select id="archetype">
-          <option value="pants">Pants</option>
-          <option value="tee">T-Shirt</option>
-        </select>
+<body class="min-h-screen">
+<div id="app">
+  <!-- Top Navigation Header -->
+  <header class="border2 border-l-0 border-r-0 border-t-0 bg-white px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+    <div class="flex items-center gap-3">
+      <a href="https://nociv.co" target="_blank" class="bg-black text-white px-3 py-1 mono font-bold tracking-wider">NOCIV //</a>
+      <div>
+        <div class="text-xl md:text-2xl font-black uppercase leading-none">Industrial CAD Engine</div>
+        <div class="mini text-gray-600 mt-1">MÜLLER &amp; SOHN / ALDRICH BESPOKE PATTERN GENERATOR</div>
+      </div>
+    </div>
+    <div class="flex gap-2 items-center flex-wrap">
+      <button class="btn px-3 py-2 text-xs mono" id="btn-guide">Anatomical Drafting Rules</button>
+      <button class="btn px-3 py-2 text-xs mono" id="btn-reset">Reset Parameters</button>
+      <button class="btn px-3 py-2 text-xs mono bg-blue-50" id="btn-save-db">Save Project to Supabase</button>
+      <button class="btn bg-black text-white px-3 py-2 text-xs mono" id="btn-print-modal">Tiled PDF / Print (100% Scale)</button>
+    </div>
+  </header>
+
+  <!-- Workspace Grid -->
+  <div class="flex flex-col lg:flex-row min-h-[calc(100vh-73px)]">
+    <!-- Sidebar / Parametric Controls -->
+    <aside class="w-full lg:w-[420px] bg-[#FAF9F5] border2 border-l-0 border-t-0 border-b-0 border-r-2 p-4 overflow-y-auto lg:max-h-[calc(100vh-73px)]">
+      <div class="notice p-3 mb-4 text-xs mono">
+        <b>PRODUCTION-GRADE PATTERN MATH</b><br>
+        Generates production patterns using structural algorithms:
+        <ul class="list-disc pl-4 mt-1 space-y-0.5 text-[11px]">
+          <li>Tilted Back Rise (&theta; &approx; 15&deg;) for seat depth</li>
+          <li>Dynamic Crotch Extensions (1/16th &amp; 1/8th seat)</li>
+          <li>15&deg; Shoulder Slopes &amp; Front/Back Neck Drops</li>
+          <li>Armhole-to-Sleeve Cap Arc Matching</li>
+        </ul>
       </div>
 
-      <div class="control-group">
-        <label for="input-mode">Measurement Mode</label>
-        <select id="input-mode">
-          <option value="body">Measure Body</option>
-          <option value="garment_flat">Copy Existing Garment</option>
-        </select>
-      </div>
+      <div class="section-title mb-3">1. Select Garment System</div>
+      <div class="grid grid-cols-2 gap-2 mb-5" id="baseButtons"></div>
 
-      <form id="measurement-form">
-        <div id="dynamic-inputs">
-          <label>Waist (inches)</label>
-          <input type="number" name="waist" value="32" step="0.25" required>
-          
-          <label>Hip (inches)</label>
-          <input type="number" name="hip" value="40" step="0.25" required>
-          
-          <label>Inseam / Length (inches)</label>
-          <input type="number" name="length" value="30" step="0.25" required>
-        </div>
-        <button type="submit" id="btn-generate">Generate Draft</button>
-      </form>
+      <div id="controls"></div>
+
+      <div class="border-t-2 border-black pt-4 mt-5 space-y-2">
+        <button class="btn w-full py-2.5 text-xs mono bg-white" id="btn-export-svg">Export Scaled CAD Vector (.SVG)</button>
+        <button class="btn w-full py-2.5 text-xs mono bg-gray-100" id="btn-export-json">Export Specification Spec (.JSON)</button>
+      </div>
     </aside>
 
-    <main id="workspace">
-      <header id="confidence-header">
-        <div id="fit-score">Confidence Score: --</div>
-      </header>
-
-      <div id="canvas-container">
-        <svg id="pattern-canvas" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000"></svg>
+    <!-- Canvas Viewport -->
+    <main class="flex-1 gridbg relative min-h-[70vh] flex flex-col">
+      <!-- Floating Toolbar -->
+      <div class="absolute top-4 left-4 z-10 flex flex-wrap gap-2">
+        <div class="bg-white border2 shadow1 p-1 flex gap-1 mono text-xs">
+          <button id="modeFlat" class="btn px-2 py-1">TECH FLAT</button>
+          <button id="modePattern" class="btn active px-2 py-1">PRODUCTION PATTERN</button>
+        </div>
+        <div class="bg-white border2 shadow1 p-1 flex gap-1 mono text-xs">
+          <button id="btn-zoom-out" class="btn px-2 py-1">&minus;</button>
+          <span id="zoomLabel" class="px-2 py-1 font-bold">100%</span>
+          <button id="btn-zoom-in" class="btn px-2 py-1">+</button>
+          <button id="btn-zoom-reset" class="btn px-2 py-1">RESET</button>
+        </div>
+        <div id="bodyOverlayToggle" class="bg-white border2 shadow1 p-1 flex gap-1 mono text-xs items-center px-2">
+          <label class="cursor-pointer flex items-center gap-1 font-bold">
+            <input type="checkbox" id="chkBodyOverlay" class="check" checked>
+            Anatomical Sloper Baseline
+          </label>
+        </div>
       </div>
 
-      <footer id="actions">
-        <button id="btn-export">Export Tiled PDF</button>
-      </footer>
+      <div class="absolute top-4 right-4 z-10 hidden md:block">
+        <div class="bg-white border2 shadow1 p-2.5 max-w-xs mini">
+          <b class="text-xs">1:1 SCALE VERIFICATION</b><br>
+          Grid squares equal exactly <b>1.0 Inch</b>. Disable "Fit to Page" when printing to maintain exact calibration.
+        </div>
+      </div>
+
+      <!-- SVG Rendering Canvas Container -->
+      <div id="canvas" class="flex-1 overflow-auto flex items-center justify-center p-8 pt-24"></div>
+
+      <!-- Dynamic Status Bar -->
+      <div class="bg-white border2 border-l-0 border-r-0 border-b-0 p-2 px-4 flex justify-between mono text-[10px] text-gray-600 flex-wrap gap-2">
+        <span id="legendText">PRODUCTION PATTERN &middot; BLACK = CUT LINE &middot; RED DASH = SEAM LINE &middot; BLUE = GRAIN / DRILL MARKS</span>
+        <span id="tileSizeEst">ESTIMATED TILES: --</span>
+      </div>
     </main>
   </div>
+</div>
 
-  <script type="module" src="./src/main.js"></script>
+<!-- Print & PDF Tiling Modal -->
+<div id="modal" class="fixed inset-0 bg-black/75 z-50 hidden items-center justify-center p-4">
+  <div class="bg-white border2 shadow2 w-full max-w-4xl max-h-[90vh] flex flex-col">
+    <div class="bg-black text-white p-4 flex justify-between items-center">
+      <div>
+        <b class="mono text-sm">PHYSICAL PATTERN TILING ENGINE (US LETTER / A4)</b>
+        <div class="mini text-gray-300">AUTOMATIC VECTOR WINDOW CLIPPING WITH ALIGNMENT CROSSHAIRS</div>
+      </div>
+      <button id="btn-close-modal" class="text-xl font-bold px-2">&times;</button>
+    </div>
+    <div class="p-5 overflow-auto flex-1">
+      <div id="printSummary" class="mono text-xs font-bold mb-3 p-3 bg-gray-100 border2"></div>
+      <div class="notice p-3 text-xs mono mb-4">
+        <b>PRINT CALIBRATION RULES:</b><br>
+        1. Set system print dialog scale to <b>100% / Actual Size</b>.<br>
+        2. Verify the 1.00" Calibration Test Square on Tile A1 using a ruler before cutting fabric.<br>
+        3. Match registration crosshairs along overlap borders.
+      </div>
+      <div id="tilePreview" class="grid sm:grid-cols-2 md:grid-cols-3 gap-4"></div>
+    </div>
+    <div class="border-t-2 border-black p-4 flex justify-end gap-2 bg-gray-50">
+      <button class="btn px-4 py-2 text-xs mono" id="btn-cancel-print">Cancel</button>
+      <button class="btn bg-black text-white px-5 py-2 text-xs mono" id="btn-execute-print">PRINT / EXPORT TO PDF</button>
+    </div>
+  </div>
+</div>
+
+<!-- Measurement & Drafting Rules Guide Modal -->
+<div id="guideModal" class="fixed inset-0 bg-black/75 z-50 hidden items-center justify-center p-4">
+  <div class="bg-white border2 shadow2 w-full max-w-2xl max-h-[85vh] flex flex-col">
+    <div class="bg-black text-white p-4 flex justify-between items-center">
+      <b class="mono text-sm">BESPOKE DRAFTING MATH &amp; FORMULAS</b>
+      <button id="btn-close-guide" class="text-xl font-bold px-2">&times;</button>
+    </div>
+    <div class="p-5 overflow-auto space-y-4 text-xs mono">
+      <p class="leading-relaxed">
+        This engine implements patternmaking logic derived from the Aldrich and M&uuml;ller &amp; Sohn drafting standards.
+      </p>
+      <div class="border2 p-3 bg-yellow-50 space-y-2">
+        <b class="text-sm">Engine Mathematical Formulas:</b>
+        <ul class="list-disc pl-5 space-y-1.5">
+          <li><b>Tilted Back Rise Angle (&theta;):</b> Back crotch rise tilts inward by 1.5&ndash;2.0 in and extends upward by 1.5&ndash;2.0 in above horizontal waist to prevent pull when sitting.</li>
+          <li><b>Crotch Extension Math:</b>
+            <br>&bull; Front Extension = Seat Circumference / 16
+            <br>&bull; Back Extension = (Seat Circumference / 8) + 0.5 in
+          </li>
+          <li><b>Shoulder Slant:</b> Anatomical 15&deg; angle applied from neck root to shoulder point (1.75 in vertical drop).</li>
+          <li><b>Sleeve Cap Curve Balancing:</b> Cap height calculated as Cap Height = 0.62 &times; Armhole Depth. Bicep width computed dynamically to match body armhole arc length.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="border-t-2 border-black p-3 flex justify-end">
+      <button class="btn bg-black text-white px-4 py-2 text-xs mono" id="btn-understand-guide">UNDERSTOOD</button>
+    </div>
+  </div>
+</div>
+
+<div id="printout"></div>
+
+<script type="module" src="./src/main.js"></script>
 </body>
 </html>
