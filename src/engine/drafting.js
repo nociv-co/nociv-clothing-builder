@@ -3,37 +3,61 @@ import { draftTeePattern, draftTeeFlat } from '../blocks/teeBlock.js';
 import { draftHeadwearPattern, draftHeadwearFlat } from '../blocks/headwearBlock.js';
 import { draftBagPattern, draftBagFlat } from '../blocks/bagBlock.js';
 
+/**
+ * Renders drafting canvas SVG element and attaches real-world pattern bounding attributes
+ */
 export function renderDraftingCanvas(state) {
   const archetype = state.archetype || 'pants';
   const cut = state.selectedCut || 'straight';
   const values = state.values;
   const zoom = state.zoom || 1.0;
 
+  let svgNode = null;
+
   if (state.mode === 'flat') {
     switch (archetype) {
       case 'pants':
-        return draftTrouserFlat(values, cut, zoom);
+        svgNode = draftTrouserFlat(values, cut, zoom);
+        break;
       case 'tshirt':
-        return draftTeeFlat(values, cut, zoom);
+        svgNode = draftTeeFlat(values, cut, zoom);
+        break;
       case 'headwear':
-        return draftHeadwearFlat(values, cut, zoom);
+        svgNode = draftHeadwearFlat(values, cut, zoom);
+        break;
       case 'bags':
-        return draftBagFlat(values, cut, zoom);
+        svgNode = draftBagFlat(values, cut, zoom);
+        break;
       default:
-        return draftTrouserFlat(values, cut, zoom);
+        svgNode = draftTrouserFlat(values, cut, zoom);
     }
   } else {
     switch (archetype) {
       case 'pants':
-        return draftTrouserPattern(values, cut, zoom);
+        svgNode = draftTrouserPattern(values, cut, zoom);
+        break;
       case 'tshirt':
-        return draftTeePattern(values, cut, zoom);
+        svgNode = draftTeePattern(values, cut, zoom);
+        break;
       case 'headwear':
-        return draftHeadwearPattern(values, cut, zoom);
+        svgNode = draftHeadwearPattern(values, cut, zoom);
+        break;
       case 'bags':
-        return draftBagPattern(values, cut, zoom);
+        svgNode = draftBagPattern(values, cut, zoom);
+        break;
       default:
-        return draftTrouserPattern(values, cut, zoom);
+        svgNode = draftTrouserPattern(values, cut, zoom);
     }
   }
+
+  if (svgNode && typeof svgNode === 'object') {
+    // Ensure scalable units (96 DPI baseline)
+    if (!svgNode.getAttribute('viewBox') && svgNode.getAttribute('width') && svgNode.getAttribute('height')) {
+      const w = parseFloat(svgNode.getAttribute('width'));
+      const h = parseFloat(svgNode.getAttribute('height'));
+      svgNode.setAttribute('viewBox', `0 0 ${w} ${h}`);
+    }
+  }
+
+  return svgNode;
 }
