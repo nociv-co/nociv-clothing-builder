@@ -1,5 +1,5 @@
 import { renderDraftingCanvas } from './engine/drafting.js';
-import { exportScaledSVG, exportTechPackJSON } from './engine/export.js';
+import { exportScaledSVG, exportTechPackJSON, generateTiledPDFPrint, calculateTileLayout } from './engine/export.js';
 
 export const GARMENT_ARCHETYPES = {
   pants: {
@@ -121,7 +121,10 @@ function setupEventListeners() {
   document.getElementById('btn-print-modal')?.addEventListener('click', openPrintModal);
   document.getElementById('btn-close-modal')?.addEventListener('click', closePrintModal);
   document.getElementById('btn-cancel-print')?.addEventListener('click', closePrintModal);
-  document.getElementById('btn-execute-print')?.addEventListener('click', () => window.print());
+  document.getElementById('btn-execute-print')?.addEventListener('click', () => {
+    const svgEl = document.querySelector('#canvas svg');
+    generateTiledPDFPrint(svgEl, state);
+  });
 }
 
 function resetApp() {
@@ -463,7 +466,10 @@ function renderStep6_Export(container) {
   });
 
   // Action Handlers
-  document.getElementById('btn-download-tiled-pdf')?.addEventListener('click', openPrintModal);
+  document.getElementById('btn-download-tiled-pdf')?.addEventListener('click', () => {
+    const svgEl = document.querySelector('#canvas svg');
+    generateTiledPDFPrint(svgEl, state);
+  });
   document.getElementById('btn-export-cad-svg')?.addEventListener('click', () => {
     const svgEl = document.querySelector('#canvas svg');
     exportScaledSVG(svgEl);
@@ -485,7 +491,7 @@ function getHomePathwayHTML() {
       </div>
 
       <button id="btn-download-tiled-pdf" class="btn w-full py-2.5 text-xs mono font-bold bg-yellow-300 hover:bg-yellow-400">
-        DOWNLOAD TILED PDF (100% SCALE)
+        PRINT TILED PDF (100% SCALE)
       </button>
 
       <div class="border-t border-black pt-2 mt-2">
@@ -562,12 +568,11 @@ function renderCanvas() {
   const svg = renderDraftingCanvas(state);
   if (svg) canvas.appendChild(svg);
 
-  // Estimate pages for status bar
+  // Dynamically estimate tiled pages based on actual bounding dimensions
   const estTiles = document.getElementById('tileSizeEst');
-  if (estTiles) {
-    const cols = Math.ceil(800 / (8.5 * 30));
-    const rows = Math.ceil(600 / (11 * 30));
-    estTiles.textContent = `ESTIMATED TILES: ${cols * rows} PAGES (US LETTER / 100% SCALE)`;
+  if (estTiles && svg) {
+    const layout = calculateTileLayout(svg);
+    estTiles.textContent = `ESTIMATED TILES: ${layout.totalPages} PAGES (${layout.cols}x${layout.rows} GRID / US LETTER / 100% SCALE)`;
   }
 }
 
@@ -591,16 +596,15 @@ function renderPrintTiles() {
   const preview = document.getElementById('tilePreview');
   if (!summary || !preview) return;
 
-  const cols = 2;
-  const rows = 2;
-  const totalTiles = cols * rows;
+  const svgEl = document.querySelector('#canvas svg');
+  const layout = calculateTileLayout(svgEl);
 
-  summary.textContent = `ARCHETYPE: ${state.archetype.toUpperCase()} // CUT: ${state.selectedCut.toUpperCase()} // TILES REQUIRED: ${totalTiles} (2x2 GRID)`;
+  summary.textContent = `ARCHETYPE: ${state.archetype.toUpperCase()} // CUT: ${state.selectedCut.toUpperCase()} // TILES REQUIRED: ${layout.totalPages} (${layout.cols}x${layout.rows} GRID)`;
 
   preview.innerHTML = '';
-  for (let r = 0; r < rows; r++) {
-    for (let c = 0; c < cols; c++) {
-      const tileId = String.fromCharCode(65 + r) + (c + 1);
+  for (let r = 0; r < layout.rows; r++) {
+    for (let c = 0; c < layout.cols; c++) {
+      const tileId = `${String.fromCharCode(65 + r)}${c + 1}`;
       const card = document.createElement('div');
       card.className = 'border2 p-3 bg-white flex flex-col items-center justify-between text-center min-h-[160px]';
       card.innerHTML = `
