@@ -47,7 +47,8 @@ const HELP_GUIDANCE = {
   archetype: "Select a primary archetype. The cut options below update automatically to isolate features for that category.",
   body_size: "Enter standard retail sizing (e.g. Men's 30x30 or Alpha S/M/L) to calibrate the baseline drafting measurements.",
   style_arch: "Configure archetype-specific elements like pockets, hammer loops, or hem cuffs.",
-  fit_ease: "Adjust movement allowances (ease) and seam allowance (SA) added to pattern edges."
+  fit_ease: "Adjust movement allowances (ease) and seam allowance (SA) added to pattern edges.",
+  export: "Select between home tiled printing with step-by-step assembly guides or factory-ready vector and tech pack exports."
 };
 
 const DEFAULT_STATE = {
@@ -58,6 +59,7 @@ const DEFAULT_STATE = {
   mode: 'pattern',
   zoom: 1.0,
   showBodyOverlay: true,
+  selectedPathway: 'home',
   quickSize: { mensWaist: 30, mensInseam: 30, womensSize: 6, alphaSize: 'M' },
   values: {
     waist: 30, hip: 38, rise: 11, inseam: 30, thigh: 24, knee: 18, hem: 16,
@@ -422,19 +424,135 @@ function renderStep5_Construction(container) {
 }
 
 function renderStep6_Export(container) {
+  state.selectedPathway = state.selectedPathway || 'home';
+
   container.innerHTML = `
-    <div class="section-title mb-3">6. EXPORT &amp; DOWNLOAD</div>
-    <button class="btn w-full py-2.5 text-xs mono mb-2 bg-yellow-50" id="btn-sidebar-print">DOWNLOAD TILED PDF (100% SCALE)</button>
-    <button class="btn w-full py-2.5 text-xs mono mb-2 bg-white" id="btn-sidebar-svg">EXPORT CAD VECTOR (.SVG)</button>
-    <button class="btn w-full py-2.5 text-xs mono bg-gray-100" id="btn-sidebar-json">EXPORT TECH PACK SPEC (.JSON)</button>
+    <div class="flex items-center justify-between section-title mb-3">
+      <span>6. EXPORT & PRODUCTION PATHWAY</span>
+      <button class="btn-help text-xs px-1 font-bold" data-help="export">(?)</button>
+    </div>
+
+    <!-- Pathway Selection Tabs -->
+    <div class="grid grid-cols-2 gap-2 mb-4">
+      <button id="path-home-btn" class="btn border2 p-2.5 text-left mono ${state.selectedPathway === 'home' ? 'active bg-black text-white' : 'bg-white text-black'}">
+        <div class="font-bold text-xs">1. DIY HOME PRINT</div>
+        <div class="mini opacity-80 mt-0.5">Tiled PDF + Sewing Guide</div>
+      </button>
+
+      <button id="path-factory-btn" class="btn border2 p-2.5 text-left mono ${state.selectedPathway === 'factory' ? 'active bg-black text-white' : 'bg-white text-black'}">
+        <div class="font-bold text-xs">2. FACTORY PRODUCTION</div>
+        <div class="mini opacity-80 mt-0.5">CAD Vectors + Tech Pack</div>
+      </button>
+    </div>
+
+    <!-- Pathway Details Container -->
+    <div id="pathway-content" class="border2 p-3 bg-white mono text-xs mb-4">
+      ${state.selectedPathway === 'home' ? getHomePathwayHTML() : getFactoryPathwayHTML()}
+    </div>
   `;
 
-  document.getElementById('btn-sidebar-svg')?.addEventListener('click', () => {
+  // Pathway Switch Event Listeners
+  document.getElementById('path-home-btn')?.addEventListener('click', () => {
+    state.selectedPathway = 'home';
+    renderStep6_Export(container);
+  });
+
+  document.getElementById('path-factory-btn')?.addEventListener('click', () => {
+    state.selectedPathway = 'factory';
+    renderStep6_Export(container);
+  });
+
+  // Action Handlers
+  document.getElementById('btn-download-tiled-pdf')?.addEventListener('click', openPrintModal);
+  document.getElementById('btn-export-cad-svg')?.addEventListener('click', () => {
     const svgEl = document.querySelector('#canvas svg');
     exportScaledSVG(svgEl);
   });
-  document.getElementById('btn-sidebar-json')?.addEventListener('click', () => exportTechPackJSON(state));
-  document.getElementById('btn-sidebar-print')?.addEventListener('click', openPrintModal);
+  document.getElementById('btn-export-techpack-json')?.addEventListener('click', () => {
+    exportTechPackJSON(state);
+  });
+
+  attachHelpClickListeners(container);
+}
+
+function getHomePathwayHTML() {
+  const currentCut = GARMENT_ARCHETYPES[state.archetype]?.cuts.find(c => c.id === state.selectedCut)?.name || state.selectedCut;
+
+  return `
+    <div class="space-y-3">
+      <div class="notice p-2 border border-black text-[11px] bg-yellow-100">
+        <b>RECOMMENDED PAPER:</b> Standard 8.5" x 11" US Letter or A4 paper. Heavy cardstock (65lb–110lb) is recommended for master sloper blocks that will be reused.
+      </div>
+
+      <button id="btn-download-tiled-pdf" class="btn w-full py-2.5 text-xs mono font-bold bg-yellow-300 hover:bg-yellow-400">
+        DOWNLOAD TILED PDF (100% SCALE)
+      </button>
+
+      <div class="border-t border-black pt-2 mt-2">
+        <div class="font-bold text-xs mb-2 uppercase">NEXT STEPS: DIY ASSEMBLY & CONSTRUCTION</div>
+        
+        <ol class="list-decimal list-inside space-y-2 text-[11px] leading-relaxed">
+          <li>
+            <b>Printer Calibration Check:</b> Open the PDF and print <b>Page 1 only</b> at <span class="underline">100% Scale / Actual Size</span> (disable "Fit to Page"). Verify that the 1.0" test square measures exactly 1.0 inch with a ruler before printing remaining pages.
+          </li>
+          <li>
+            <b>Tile Assembly & Taping:</b> Trim along the marked margin lines on each page. Match corner alignment crosshairs and grid indexes (e.g., Row A - Tile 1 to Row A - Tile 2). Tape sheets flat across a table.
+          </li>
+          <li>
+            <b>Pattern Cutting:</b> Cut out pattern pieces along the solid black outer line (includes ${state.values.sa}" seam allowance). The red dashed line indicates your stitching line.
+          </li>
+          <li>
+            <b>Garment Construction Steps (${currentCut.toUpperCase()}):</b>
+            <ul class="list-disc list-inside ml-3 mt-1 mini space-y-1 text-gray-700">
+              <li>Mark all notch points, dart tips, and grainlines onto fabric using chalk.</li>
+              <li>Stitch internal features first (pockets, pleats, or double-knee patches).</li>
+              <li>Join front and back panels at side seams and inseams using red net seamlines.</li>
+              <li>Finish waistband/cuff enclosures and press seams with an iron.</li>
+            </ul>
+          </li>
+        </ol>
+      </div>
+    </div>
+  `;
+}
+
+function getFactoryPathwayHTML() {
+  return `
+    <div class="space-y-3">
+      <div class="grid grid-cols-2 gap-2">
+        <button id="btn-export-cad-svg" class="btn py-2 text-[11px] mono font-bold bg-white hover:bg-gray-100">
+          EXPORT CAD VECTOR (.SVG)
+        </button>
+        <button id="btn-export-techpack-json" class="btn py-2 text-[11px] mono font-bold bg-white hover:bg-gray-100">
+          EXPORT TECH PACK (.JSON)
+        </button>
+      </div>
+
+      <div class="border-t border-black pt-2 mt-2">
+        <div class="font-bold text-xs mb-2 uppercase">NEXT STEPS: FACTORY HANDOFF & MANUFACTURING</div>
+
+        <ol class="list-decimal list-inside space-y-2 text-[11px] leading-relaxed">
+          <li>
+            <b>CAD Vector Ingestion:</b> Supply the exported <code>.SVG</code> vector file to your factory or patternmaker. The file contains isolated vector layers:
+            <ul class="list-disc list-inside ml-3 mini text-gray-700">
+              <li><code>CUT_LINE</code>: Outer path for automated CNC fabric lasers/cutters.</li>
+              <li><code>SEAM_LINE</code>: Net stitching line.</li>
+              <li><code>GRAINLINE</code> & <code>NOTCHES</code>: Alignment marks for assembly operators.</li>
+            </ul>
+          </li>
+          <li>
+            <b>Tech Pack Specs & POM:</b> Hand off the <code>.JSON</code> file or import it into your PLM system. It details exact Points of Measure (POM), graded tolerances, seam allowance specifications, and hardware callouts.
+          </li>
+          <li>
+            <b>Sample Creation & Prototype Fitting:</b> Have the factory cut and sew a single physical sample ("First Sample") using the CAD files to verify fit and fabric drape.
+          </li>
+          <li>
+            <b>Production Marker Making:</b> The factory patternmaker imports the CAD vectors into marker software (Optitex/Lectra/Gerber) to tile pattern pieces efficiently across full fabric roll widths, minimizing fabric waste.
+          </li>
+        </ol>
+      </div>
+    </div>
+  `;
 }
 
 function renderCanvas() {
