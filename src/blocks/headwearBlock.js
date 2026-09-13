@@ -1,6 +1,5 @@
 export function draftHeadwearPattern(values, cut = 'cadet_hat', zoom = 1.0) {
   const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-  const scale = 30 * zoom;
   svg.setAttribute('width', `${800 * zoom}`);
   svg.setAttribute('height', `${600 * zoom}`);
   svg.setAttribute('viewBox', `0 0 ${800 * zoom} ${600 * zoom}`);
