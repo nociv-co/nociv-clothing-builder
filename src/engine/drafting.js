@@ -1,26 +1,15 @@
-import { calculateBodyBlock } from './measurements.js';
-import { applyEase } from './ease.js';
-import { draftTrouserBlock } from '../blocks/trouserBlock.js';
-import { draftTeeBlock } from '../blocks/teeBlock.js';
-import { addSeamAllowance } from './seamAllowance.js';
-import { validatePattern } from './validation.js';
+import { draftTrouserPattern, draftTrouserFlat } from '../blocks/trouserBlock.js';
+import { draftTeePattern, draftTeeFlat } from '../blocks/teeBlock.js';
+import { draftSleevePattern } from '../blocks/sleeveBlock.js';
 
-export function generatePattern(archetype, rawMeasurements, styleConfig, fitConfig) {
-  const body = calculateBodyBlock(rawMeasurements);
-  const targetFit = applyEase(body, fitConfig);
-
-  let rawPattern;
-  if (archetype === 'pants') {
-    rawPattern = draftTrouserBlock(targetFit, styleConfig);
+export function renderDraftingCanvas(state) {
+  let svg;
+  if (state.mode === 'flat') {
+    svg = state.base === 'pants' ? draftTrouserFlat(state.values, state.zoom) : draftTeeFlat(state.values, state.zoom);
   } else {
-    rawPattern = draftTeeBlock(targetFit, styleConfig);
+    if (state.base === 'pants') svg = draftTrouserPattern(state.values, state.zoom);
+    else if (state.base === 'tshirt') svg = draftTeePattern(state.values, state.zoom);
+    else svg = draftSleevePattern(state.values, state.zoom);
   }
-
-  const finalPattern = addSeamAllowance(rawPattern, 0.5);
-  const validationReport = validatePattern(finalPattern);
-
-  return {
-    pattern: finalPattern,
-    confidence: validationReport
-  };
+  return svg;
 }
