@@ -59,10 +59,10 @@ function addScaleSquare(svg, x, y) {
   txt(svg, x + 0.5, y + 0.7, 'CALIBRATION', 0.14, 700, '#000', 'middle');
 }
 
-export function draftTrouserPattern(values, zoom) {
+export function draftTrouserPattern(values, cut = 'straight', zoom = 1.0) {
   const p = values;
   const s = svgRoot(42, 48, zoom);
-  txt(s, 1, 1.2, 'NOCIV // TROUSER BESPOKE DRAFTING BLOCK', 0.65, 900);
+  txt(s, 1, 1.2, `NOCIV // TROUSER BLOCK (${cut.toUpperCase()})`, 0.65, 900);
 
   const w = (p.waist + p.waistEase) / 4;
   const h = (p.hip + p.hipEase) / 4;
@@ -170,10 +170,10 @@ export function draftTrouserPattern(values, zoom) {
   return s;
 }
 
-export function draftTrouserFlat(values, zoom) {
+export function draftTrouserFlat(values, cut = 'straight', zoom = 1.0) {
   const p = values;
   const s = svgRoot(28, 36, zoom);
-  txt(s, 1, 1.2, 'NOCIV // TECHNICAL FLAT - TROUSERS', 0.65, 900);
+  txt(s, 1, 1.2, `NOCIV // TECHNICAL FLAT - TROUSERS (${cut.toUpperCase()})`, 0.65, 900);
   const w = (p.waist + p.waistEase) / 4;
   const h = (p.hip + p.hipEase) / 4;
   const len = p.rise + p.inseam;
