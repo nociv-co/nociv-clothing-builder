@@ -61,8 +61,8 @@ body { margin:0; font-family:'Inter',sans-serif; background:var(--paper); color:
     <!-- Sidebar / Controls -->
     <aside class="w-full lg:w-[410px] bg-[#FAF9F5] border2 border-l-0 border-t-0 border-b-0 border-r-2 p-4 overflow-y-auto lg:max-h-[calc(100vh-73px)]">
       <div class="notice p-3 mb-4 text-xs mono">
-        <b>TECHNICAL GARMENT MAKER</b><br>
-        Adjust body measurements, ease allowance, and structural features. View the live <b>Tech Flat</b> to see design proportion &amp; 2D body space fill, or switch to <b>Pattern</b> for full printable geometry.
+        <b>PARAMETRIC DRAFTING ENGINE</b><br>
+        Adjust body dimensions, ease allowances, and structural styles. View the live <b>Tech Flat</b> or switch to <b>Pattern Pieces</b> for full drafting geometry with seam allowances.
       </div>
 
       <div class="section-title mb-2">1. Select Garment Archetype</div>
@@ -132,7 +132,7 @@ body { margin:0; font-family:'Inter',sans-serif; background:var(--paper); color:
         <b>PRINTING INSTRUCTIONS:</b><br>
         1. Set printer scaling to <b>100% / Actual Size</b> (do NOT use "Fit to Printable Area").<br>
         2. Print or "Save to PDF". Measure the 1-Inch Scale Box on Tile A1.<br>
-        3. Trim margins along dotted lines and align target registration crosshairs (e.g. A1 → A2).
+        3. Trim margins along dotted lines and align target registration crosshairs.
       </div>
       <div id="tilePreview" class="grid sm:grid-cols-2 md:grid-cols-3 gap-4"></div>
     </div>
@@ -147,30 +147,30 @@ body { margin:0; font-family:'Inter',sans-serif; background:var(--paper); color:
 <div id="guideModal" class="fixed inset-0 bg-black/75 z-50 hidden items-center justify-center p-4">
   <div class="bg-white border2 shadow2 w-full max-w-2xl max-h-[85vh] flex flex-col">
     <div class="bg-black text-white p-4 flex justify-between items-center">
-      <b class="mono text-sm">ASTM APPAREL MEASUREMENT GUIDE</b>
+      <b class="mono text-sm">NOCIV MEASUREMENT &amp; DRAFTING GUIDE</b>
       <button onclick="closeGuide()" class="text-xl font-bold px-2">×</button>
     </div>
     <div class="p-5 overflow-auto space-y-4 text-xs mono">
       <p class="leading-relaxed">
-        To construct a reliable pattern, measure over standard undergarments using a flexible vinyl measuring tape. Keep tape snug but not binding.
+        Parametric drafting constructs garment geometry directly from anatomical baselines plus dynamic ease logic.
       </p>
       <div class="border2 p-3 bg-yellow-50 space-y-2">
-        <b class="text-sm">Key Body Baselines:</b>
+        <b class="text-sm">Key Anatomical Reference Points:</b>
         <ul class="list-disc pl-5 space-y-1">
-          <li><b>Natural Waist:</b> Measure around the narrowest torso point (usually 1-2 inches above naval).</li>
-          <li><b>Seat / Hip:</b> Measure around the fullest portion of the buttocks (approx. 7-9 inches below waist).</li>
-          <li><b>Front Rise:</b> Sit in a hard chair. Measure vertically from waist side along chair seat to front waist band.</li>
-          <li><b>Inseam:</b> Measure along inner leg from crotch seam down to floor/ankle bone.</li>
-          <li><b>Chest:</b> Measure full circumference around fullest part of chest under armpits.</li>
-          <li><b>Cross Shoulder:</b> Measure from shoulder point bone across upper back to opposite shoulder bone.</li>
+          <li><b>Natural Waist:</b> Narrowest portion of the torso above navel.</li>
+          <li><b>Hip / Seat:</b> Fullest portion of hips and seat (typically 7–9" below waist).</li>
+          <li><b>Front Rise:</b> Vertical depth from waistline to crotch level.</li>
+          <li><b>Crotch Extension Math:</b> Calculated parametrically as 1/16th hip (front) and 1/8th hip (back).</li>
+          <li><b>Chest / Bust:</b> Fullest horizontal circumference around chest.</li>
+          <li><b>Cross Shoulder:</b> Bone-to-bone measurement across top back.</li>
         </ul>
       </div>
       <div class="border2 p-3 space-y-1">
-        <b>EASE ALLOWANCE MATRIX:</b>
+        <b>EASE ALLOWANCE CONVENTIONS:</b>
         <p class="text-gray-600">
-          • Fitted/Structured: +0.5" to +1.5" total ease<br>
-          • Regular Workwear: +2" to +4" total ease<br>
-          • Oversized/Outerwear: +5" to +8" total ease
+          • Fitted: +0.5" to +1.5" total ease<br>
+          • Regular Workwear: +2.0" to +4.0" total ease<br>
+          • Oversized / Boxy: +5.0" to +8.0" total ease
         </p>
       </div>
     </div>
@@ -180,23 +180,22 @@ body { margin:0; font-family:'Inter',sans-serif; background:var(--paper); color:
   </div>
 </div>
 
-<!-- Hidden container for window.print() -->
 <div id="printout"></div>
 
 <script>
-// --- GLOBAL CONSTANTS & STATE ---
+// --- GLOBAL CONSTANTS & ARCHETYPES ---
 const BASES = {
   pants: { name: 'PANTS', tag: 'UTILITY / WORKWEAR' },
   tshirt: { name: 'T-SHIRT', tag: 'TEE / FITTED BASIC' },
   cadet: { name: 'CADET HAT', tag: 'HEADWEAR' },
-  tote: { name: 'TOTE BAG', tag: 'ACCESSSORY' },
+  tote: { name: 'TOTE BAG', tag: 'ACCESSORY' },
   fanny: { name: 'FANNY PACK', tag: 'WAIST BAG' }
 };
 
 const defaults = {
-  pants: { waist: 32, hip: 42, rise: 11.5, inseam: 30, thigh: 25, knee: 18, hem: 16, waistEase: 1.0, hipEase: 3.0, thighEase: 2.0, style: 'workwear', fit: 'straight', frontPocket: 'slash', backPocket: 'square', utilityPocket: 'cargo', cargoHeight: 12, beltLoops: true, fly: true, pocketBag: true, sa: 0.5, showGrain: true, showNotches: true, showLabels: true },
-  tshirt: { chest: 40, length: 28, shoulder: 18, sleeve: 8.5, armhole: 9.5, neck: 16, neckDepth: 3.5, hemEase: 4.0, fit: 'regular', collar: 'crew', placket: false, pocket: true, sa: 0.5, showGrain: true, showNotches: true, showLabels: true },
-  cadet: { head: 23, crown: 3.5, bill: 2.5, panels: 6, sa: 0.5 },
+  pants: { waist: 32, hip: 42, rise: 11.5, inseam: 30, thigh: 25, knee: 18, hem: 16, waistEase: 1.0, hipEase: 3.0, style: 'workwear', fit: 'straight', frontPocket: 'slash', backPocket: 'square', utilityPocket: 'cargo', cargoHeight: 12, beltLoops: true, fly: true, sa: 0.5 },
+  tshirt: { chest: 40, length: 28, shoulder: 18, sleeve: 8.5, armhole: 9.5, neck: 16, hemEase: 4.0, fit: 'regular', silhouette: 'boxy', pocket: true, sa: 0.5 },
+  cadet: { head: 23, crown: 3.5, bill: 2.5, sa: 0.5 },
   tote: { width: 16, height: 14, depth: 4, strap: 24, sa: 0.5 },
   fanny: { width: 11, height: 6, depth: 3, strap: 36, sa: 0.5 }
 };
@@ -217,7 +216,7 @@ const presetsTee = {
 
 const state = {
   base: 'pants',
-  mode: 'flat', // 'flat' or 'pattern'
+  mode: 'flat',
   zoom: 1.0,
   showBodyOverlay: true,
   values: JSON.parse(JSON.stringify(defaults.pants))
@@ -225,9 +224,7 @@ const state = {
 
 const NS = 'http://www.w3.org/2000/svg';
 
-// --- HELPER FUNCTIONS ---
-function S(x) { return x * 72; } // Scale inches to SVG DPI pixels
-
+// --- UTILITY FUNCTIONS ---
 function el(tag, attrs = {}, html = '') {
   const n = document.createElement(tag);
   Object.entries(attrs).forEach(([k, v]) => n.setAttribute(k, v));
@@ -282,9 +279,9 @@ function boolField(key, label) {
   </label>`;
 }
 
-function presetButtons(kind) {
+function presetButtons() {
   return `<div class="border2 bg-white p-3 mb-4 shadow1">
-    <div class="section-title mb-2">ASTM Baseline Size</div>
+    <div class="section-title mb-2">Baseline Size Preset</div>
     <div class="grid grid-cols-4 gap-1">
       ${['S', 'M', 'L', 'XL'].map(s => `<button class="btn py-1 text-xs" onclick="applyPreset('${s}')">${s}</button>`).join('')}
     </div>
@@ -295,11 +292,11 @@ function renderControls() {
   const c = document.getElementById('controls');
   let h = '';
   if (state.base === 'pants') {
-    h += presetButtons('pants');
-    h += `<div class="section-title mb-2">2. Body Baseline (Inches)</div>`;
+    h += presetButtons();
+    h += `<div class="section-title mb-2">2. Body Baseline Measurements</div>`;
     h += sliderField('waist', 'Natural Waist', 24, 56, .25);
     h += sliderField('hip', 'Seat / Hip Circumference', 30, 64, .25);
-    h += sliderField('rise', 'Front Rise', 8, 16, .25);
+    h += sliderField('rise', 'Front Rise Depth', 8, 16, .25);
     h += sliderField('inseam', 'Inseam Length', 24, 36, .25);
     h += sliderField('thigh', 'Thigh Circumference', 18, 36, .25);
     h += sliderField('knee', 'Knee Circumference', 12, 28, .25);
@@ -307,42 +304,40 @@ function renderControls() {
 
     h += `<div class="section-title mt-5 mb-2">3. Fit &amp; Ease Allowance</div>`;
     h += sliderField('waistEase', 'Waist Ease', 0, 4, .25);
-    h += sliderField('hipEase', 'Hip / Seat Ease', 0, 8, .25);
-    h += sliderField('thighEase', 'Thigh Ease', 0, 6, .25);
+    h += sliderField('hipEase', 'Hip Ease', 0, 8, .25);
 
     h += `<div class="section-title mt-5 mb-2">4. Style Architecture</div>`;
-    h += selectField('style', 'Garment Style', [['workwear', 'Workwear Utility'], ['field', 'Field Cargo'], ['clean', 'Tailored Minimal']]);
-    h += selectField('fit', 'Leg Fit Cut', [['straight', 'Straight Leg'], ['wide', 'Wide Cut'], ['tapered', 'Tapered Cut']]);
-    h += selectField('frontPocket', 'Front Pocket Style', [['slash', 'Slash Pocket'], ['utility', 'Utility Patch'], ['none', 'None']]);
+    h += selectField('fit', 'Leg Fit Silhouette', [['straight', 'Straight Leg'], ['wide', 'Wide Leg'], ['extrawide', 'Extra Wide Leg'], ['carpenter', 'Carpenter Style'], ['army', 'Army Fatigues']]);
+    h += selectField('frontPocket', 'Front Pocket', [['slash', 'Slash Pocket'], ['utility', 'Utility Patch'], ['none', 'None']]);
     h += selectField('backPocket', 'Back Pocket', [['square', 'Square Patch'], ['none', 'None']]);
     h += selectField('utilityPocket', 'Cargo Pocket', [['cargo', 'Cargo Pocket Side'], ['none', 'None']]);
     if (state.values.utilityPocket === 'cargo') h += sliderField('cargoHeight', 'Cargo Height Position', 8, 18, .5);
 
-    h += `<div class="section-title mt-5 mb-2">5. Construction &amp; Pattern</div>`;
+    h += `<div class="section-title mt-5 mb-2">5. Construction Options</div>`;
     h += boolField('beltLoops', 'Belt Loops');
     h += boolField('fly', 'Zipper Fly Construction');
     h += sliderField('sa', 'Seam Allowance', 0, .75, .125);
   } else if (state.base === 'tshirt') {
-    h += presetButtons('tshirt');
-    h += `<div class="section-title mb-2">2. Body Baseline (Inches)</div>`;
+    h += presetButtons();
+    h += `<div class="section-title mb-2">2. Body Baseline Measurements</div>`;
     h += sliderField('chest', 'Chest Circumference', 30, 60, .25);
-    h += sliderField('length', 'Garment Length', 22, 36, .25);
+    h += sliderField('length', 'Garment Length', 20, 36, .25);
     h += sliderField('shoulder', 'Cross Shoulder Width', 14, 24, .25);
-    h += sliderField('sleeve', 'Sleeve Length', 5, 14, .25);
+    h += sliderField('sleeve', 'Sleeve Length', 4, 16, .25);
     h += sliderField('armhole', 'Armhole Depth', 7, 14, .25);
-    h += sliderField('neck', 'Neck Circumference', 13, 22, .25);
+    h += sliderField('neck', 'Neck Circumference', 12, 22, .25);
 
-    h += `<div class="section-title mt-5 mb-2">3. Ease &amp; Styling</div>`;
-    h += sliderField('hemEase', 'Body Chest Ease', 1, 10, .25);
-    h += selectField('fit', 'Body Silhouette', [['regular', 'Regular Fit'], ['boxy', 'Boxy Cut'], ['oversized', 'Oversized']]);
+    h += `<div class="section-title mt-5 mb-2">3. Style &amp; Silhouette</div>`;
+    h += selectField('silhouette', 'Garment Archetype', [['boxy', 'Boxy Cut'], ['cropped', 'Cropped Tee'], ['muscle', 'Muscle Shirt'], ['tank', 'Tank Top']]);
+    h += sliderField('hemEase', 'Chest Ease Allowance', 1, 10, .25);
     h += boolField('pocket', 'Chest Patch Pocket');
     h += sliderField('sa', 'Seam Allowance', 0, .75, .125);
   } else {
-    h += `<div class="section-title mb-2">Accessory Geometry</div>`;
+    h += `<div class="section-title mb-2">Accessory Dimensions</div>`;
     if (state.base === 'cadet') {
       h += sliderField('head', 'Head Circumference', 20, 26, .25);
       h += sliderField('crown', 'Crown Height', 2.5, 5, .25);
-      h += sliderField('bill', 'Bill Length', 1.5, 4, .25);
+      h += sliderField('bill', 'Bill Depth', 1.5, 4, .25);
     } else {
       h += sliderField('width', 'Width', 8, 24, .5);
       h += sliderField('height', 'Height', 6, 20, .5);
@@ -401,7 +396,7 @@ function toggleBodyOverlay(v) {
   render();
 }
 
-// --- VECTOR SVG DRAWING UTILITIES ---
+// --- SVG VECTOR CREATION HELPERS ---
 function svgRoot(w, h) {
   const s = document.createElementNS(NS, 'svg');
   s.setAttribute('xmlns', NS);
@@ -464,139 +459,102 @@ function addScaleSquare(svg, x, y) {
   txt(svg, x + 0.5, y + 0.75, 'SCALE CHECK', 0.16, 700, '#000', 'middle');
 }
 
-function pathFromPoints(points) {
-  return 'M ' + points.map(p => `${p[0].toFixed(3)} ${p[1].toFixed(3)}`).join(' L ') + ' Z';
-}
+// --- DRAFTING COMPUTATIONAL ENGINES ---
 
-// --- DYNAMIC TECH FLAT RENDERING ENGINE ---
+// 1. PANTS TECH FLAT
 function flatPants() {
   const p = state.values;
   const s = svgRoot(28, 36);
   txt(s, 1, 1.2, 'NOCIV // TECHNICAL FLAT - PANTS', 0.7, 900);
-  txt(s, 1, 1.8, `${p.style.toUpperCase()} · ${p.fit.toUpperCase()} LEG · WAIST: ${p.waist}" (+${p.waistEase}" EASE)`, 0.35, 700, '#555');
+  txt(s, 1, 1.8, `${p.fit.toUpperCase()} · WAIST: ${p.waist}" (+${p.waistEase}" EASE) · INSEAM: ${p.inseam}"`, 0.35, 700, '#555');
 
-  const gWaist = (p.waist + p.waistEase) / 4;
-  const gHip = (p.hip + p.hipEase) / 4;
-  const gThigh = (p.thigh + p.thighEase) / 4;
-  const gHem = p.hem / 4;
-  const bWaist = p.waist / 4;
-  const bHip = p.hip / 4;
-  const bThigh = p.thigh / 4;
+  let legMult = 1.0;
+  if (p.fit === 'wide') legMult = 1.25;
+  if (p.fit === 'extrawide') legMult = 1.5;
 
+  const w = (p.waist + p.waistEase) / 4;
+  const h = (p.hip + p.hipEase) / 4;
+  const hem = (p.hem / 4) * legMult;
   const len = p.rise + p.inseam;
-  const sy = 4;
+  const sy = 4, fx = 6;
 
-  // Front View
-  const fx = 6;
-  const fPts = [
-    [fx, sy],
-    [fx + gWaist, sy + 0.2],
-    [fx + gHip, sy + p.rise * 0.4],
-    [fx + gThigh, sy + p.rise],
-    [fx + gHem, sy + len],
-    [fx + 0.3, sy + len],
-    [fx, sy + p.rise]
-  ];
-  mkPath(s, pathFromPoints(fPts), '#000', '#fff', '', 0.1);
+  // Front View Path with Bézier Side Seam
+  const fD = `M ${fx} ${sy} L ${fx + w} ${sy + 0.2} C ${fx + h * 1.1} ${sy + p.rise * 0.5}, ${fx + hem * 1.1} ${sy + len * 0.6}, ${fx + hem} ${sy + len} L ${fx} ${sy + len} Z`;
+  mkPath(s, fD, '#000', '#fff', '', 0.1);
 
-  // 2D Body Baseline Space Overlay
   if (state.showBodyOverlay) {
-    const bPts = [
-      [fx, sy],
-      [fx + bWaist, sy + 0.2],
-      [fx + bHip, sy + p.rise * 0.4],
-      [fx + bThigh, sy + p.rise],
-      [fx + gHem * 0.8, sy + len],
-      [fx + 0.2, sy + len],
-      [fx, sy + p.rise]
-    ];
-    mkPath(s, pathFromPoints(bPts), '#2563EB', 'rgba(37,99,235,0.08)', '0.15 0.15', 0.06);
-    txt(s, fx + gWaist + 0.3, sy + 0.5, `BODY BASELINE`, 0.25, 700, '#2563EB');
-    txt(s, fx + gWaist + 0.3, sy + 0.9, `EASE: +${p.waistEase}" WAIST / +${p.hipEase}" HIP`, 0.22, 500, '#2563EB');
+    const bw = p.waist / 4;
+    const bh = p.hip / 4;
+    const bD = `M ${fx} ${sy} L ${fx + bw} ${sy + 0.2} C ${fx + bh} ${sy + p.rise * 0.5}, ${fx + hem * 0.8} ${sy + len * 0.6}, ${fx + hem * 0.8} ${sy + len} L ${fx} ${sy + len} Z`;
+    mkPath(s, bD, '#2563EB', 'rgba(37,99,235,0.08)', '0.15 0.15', 0.06);
   }
 
-  // Details
-  line(s, fx, sy + 0.8, fx + gWaist, sy + 0.8, '#000', '', 0.08); // Waistband
-  line(s, fx, sy + 0.8, fx, sy + p.rise, '#000', '', 0.08); // Fly seam
+  // Waistband & Fly
+  line(s, fx, sy + 0.8, fx + w, sy + 0.8, '#000', '', 0.08);
+  line(s, fx, sy + 0.8, fx, sy + p.rise, '#000', '', 0.08);
+
+  // Style Details
   if (p.frontPocket === 'slash') {
-    line(s, fx + 0.4, sy + 0.8, fx + gWaist - 0.2, sy + 2.5, '#000', '', 0.08);
+    line(s, fx + 0.4, sy + 0.8, fx + w - 0.2, sy + 2.5, '#000', '', 0.08);
   } else if (p.frontPocket === 'utility') {
-    rectIn(s, fx + 0.5, sy + 1.2, gWaist - 0.8, 2.2, '#000', 'none');
+    rectIn(s, fx + 0.4, sy + 1.2, w - 0.6, 2.2, '#000', 'none');
   }
-  if (p.utilityPocket === 'cargo') {
-    rectIn(s, fx + gThigh - 1.2, sy + p.cargoHeight * 0.8, 2.2, 2.8, '#000', 'none');
-    txt(s, fx + gThigh - 0.1, sy + p.cargoHeight * 0.8 + 1.4, 'CARGO', 0.2, 700, '#000', 'middle');
+
+  if (p.fit === 'carpenter') {
+    line(s, fx + hem * 0.8, sy + p.rise + 4, fx + hem * 0.8, sy + p.rise + 10, '#000', '0.2 0.2');
   }
-  txt(s, fx + gHip / 2, sy + len + 1, 'FRONT VIEW', 0.4, 900, '#000', 'middle');
+
+  txt(s, fx + h / 2, sy + len + 1, 'FRONT VIEW', 0.4, 900, '#000', 'middle');
 
   // Back View
   const bx = 18;
-  const bPtsBack = [
-    [bx, sy],
-    [bx + gWaist, sy + 0.4],
-    [bx + gHip, sy + p.rise * 0.4],
-    [bx + gThigh, sy + p.rise],
-    [bx + gHem, sy + len],
-    [bx + 0.3, sy + len],
-    [bx, sy + p.rise]
-  ];
-  mkPath(s, pathFromPoints(bPtsBack), '#000', '#fff', '', 0.1);
-  line(s, bx, sy + 0.8, bx + gWaist, sy + 0.8, '#000', '', 0.08);
+  const bDBack = `M ${bx} ${sy} L ${bx + w} ${sy + 0.4} C ${bx + h * 1.1} ${sy + p.rise * 0.5}, ${bx + hem * 1.1} ${sy + len * 0.6}, ${bx + hem} ${sy + len} L ${bx} ${sy + len} Z`;
+  mkPath(s, bDBack, '#000', '#fff', '', 0.1);
+  line(s, bx, sy + 0.8, bx + w, sy + 0.8, '#000', '', 0.08);
   if (p.backPocket === 'square') {
     rectIn(s, bx + 0.6, sy + 2.0, 1.8, 2.0, '#000', 'none');
   }
-  txt(s, bx + gHip / 2, sy + len + 1, 'BACK VIEW', 0.4, 900, '#000', 'middle');
 
+  txt(s, bx + h / 2, sy + len + 1, 'BACK VIEW', 0.4, 900, '#000', 'middle');
   addScaleSquare(s, 1, 32);
   return s;
 }
 
+// 2. T-SHIRT TECH FLAT
 function flatTee() {
   const p = state.values;
   const s = svgRoot(28, 32);
   txt(s, 1, 1.2, 'NOCIV // TECHNICAL FLAT - T-SHIRT', 0.7, 900);
-  txt(s, 1, 1.8, `${p.fit.toUpperCase()} CUT · CHEST: ${p.chest}" (+${p.hemEase}" EASE) · SHOULDER: ${p.shoulder}"`, 0.35, 700, '#555');
+  txt(s, 1, 1.8, `${p.silhouette.toUpperCase()} · CHEST: ${p.chest}" (+${p.hemEase}" EASE) · LENGTH: ${p.length}"`, 0.35, 700, '#555');
 
-  const gChest = (p.chest + p.hemEase) / 4;
-  const gShoulder = p.shoulder / 2;
-  const bChest = p.chest / 4;
+  const c = (p.chest + p.hemEase) / 4;
+  const sh = p.shoulder / 2;
+  const arm = p.armhole;
   const sy = 4, fx = 6;
 
-  // Front View
-  const fPts = [
-    [fx, sy + 0.8],
-    [fx + p.neck / 4, sy],
-    [fx + gShoulder, sy + 0.6],
-    [fx + gChest, sy + p.armhole * 0.7],
-    [fx + gChest, sy + p.length * 0.7],
-    [fx, sy + p.length * 0.7]
-  ];
-  mkPath(s, pathFromPoints(fPts), '#000', '#fff', '', 0.1);
+  let gLen = p.length * 0.7;
+  if (p.silhouette === 'cropped') gLen = p.length * 0.5;
 
-  // Body Baseline
+  // Neck, Shoulder, Armhole Bézier
+  const frontD = `M ${fx} ${sy + 1.2} Q ${fx + p.neck / 8} ${sy + 1.5}, ${fx + p.neck / 4} ${sy} L ${fx + sh} ${sy + 0.6} Q ${fx + sh - 0.2} ${sy + arm * 0.4}, ${fx + c} ${sy + arm * 0.7} L ${fx + c} ${sy + gLen} L ${fx} ${sy + gLen} Z`;
+  mkPath(s, frontD, '#000', '#fff', '', 0.1);
+
   if (state.showBodyOverlay) {
-    const bPts = [
-      [fx, sy + 0.8],
-      [fx + p.neck / 4, sy],
-      [fx + gShoulder * 0.95, sy + 0.6],
-      [fx + bChest, sy + p.armhole * 0.7],
-      [fx + bChest, sy + p.length * 0.7],
-      [fx, sy + p.length * 0.7]
-    ];
-    mkPath(s, pathFromPoints(bPts), '#2563EB', 'rgba(37,99,235,0.08)', '0.15 0.15', 0.06);
-    txt(s, fx + gChest + 0.3, sy + 2, `2D BODY BASELINE`, 0.25, 700, '#2563EB');
-    txt(s, fx + gChest + 0.3, sy + 2.4, `CHEST EASE: +${p.hemEase}"`, 0.22, 500, '#2563EB');
+    const bc = p.chest / 4;
+    const bodyD = `M ${fx} ${sy + 1.2} Q ${fx + p.neck / 8} ${sy + 1.5}, ${fx + p.neck / 4} ${sy} L ${fx + sh * 0.95} ${sy + 0.6} Q ${fx + sh * 0.9} ${sy + arm * 0.4}, ${fx + bc} ${sy + arm * 0.7} L ${fx + bc} ${sy + gLen} L ${fx} ${sy + gLen} Z`;
+    mkPath(s, bodyD, '#2563EB', 'rgba(37,99,235,0.08)', '0.15 0.15', 0.06);
   }
 
-  // Sleeve & Neck
-  line(s, fx + gShoulder, sy + 0.6, fx + gShoulder + p.sleeve * 0.6, sy + p.sleeve * 0.5, '#000', '', 0.08);
-  line(s, fx + gChest, sy + p.armhole * 0.7, fx + gShoulder + p.sleeve * 0.6, sy + p.sleeve * 0.5, '#000', '', 0.08);
-
-  if (p.pocket) {
-    rectIn(s, fx + 1.0, sy + 2.5, 1.5, 1.8, '#000', 'none');
+  // Sleeves (Muscle / Tank / Regular)
+  if (p.silhouette !== 'tank') {
+    const slLen = p.silhouette === 'muscle' ? p.sleeve * 0.3 : p.sleeve * 0.6;
+    line(s, fx + sh, sy + 0.6, fx + sh + slLen, sy + slLen * 0.8, '#000', '', 0.08);
+    line(s, fx + c, sy + arm * 0.7, fx + sh + slLen, sy + slLen * 0.8, '#000', '', 0.08);
   }
 
-  txt(s, fx + gChest / 2, sy + p.length * 0.7 + 1, 'FRONT VIEW (FOLD)', 0.4, 900, '#000', 'middle');
+  if (p.pocket) rectIn(s, fx + 1.0, sy + 2.8, 1.5, 1.8, '#000', 'none');
+
+  txt(s, fx + c / 2, sy + gLen + 1, 'FRONT VIEW (CENTER FOLD)', 0.4, 900, '#000', 'middle');
   addScaleSquare(s, 1, 28);
   return s;
 }
@@ -611,48 +569,78 @@ function flatAccessory() {
   return s;
 }
 
-// --- PATTERN PIECES RENDERER ---
-function drawPatternPiece(svg, pts, sa, label, cutQty = 'CUT 1') {
-  mkPath(svg, pathFromPoints(pts), '#DC2626', '#fff', '0.15 0.15', 0.06); // Net line
-  txt(svg, (pts[0][0] + pts[1][0]) / 2, (pts[0][1] + pts[2][1]) / 2, label, 0.4, 900, '#000', 'middle');
-  txt(svg, (pts[0][0] + pts[1][0]) / 2, (pts[0][1] + pts[2][1]) / 2 + 0.4, cutQty, 0.25, 700, '#DC2626', 'middle');
-}
-
+// 3. PARAMETRIC PANTS PATTERN BLOCK (PARAMETRIC BÉZIER CURVES)
 function patternPants() {
   const p = state.values;
-  const s = svgRoot(36, 42);
-  txt(s, 1, 1.2, 'NOCIV // PANTS PATTERN BLOCK', 0.7, 900);
+  const s = svgRoot(38, 44);
+  txt(s, 1, 1.2, 'NOCIV // PANTS PARAMETRIC DRAFTING PATTERN', 0.7, 900);
 
   const w = (p.waist + p.waistEase) / 4;
   const h = (p.hip + p.hipEase) / 4;
+  const fCrotch = h / 4; // Crotch extension formula: 1/16th hip total per front
+  const bCrotch = h / 2; // Back crotch extension: ~1/8th hip
   const len = p.rise + p.inseam;
 
-  // Front Panel
-  const fPts = [[2, 3], [2 + w, 3], [2 + h, 3 + p.rise], [2 + p.hem / 4, 3 + len], [2, 3 + len]];
-  drawPatternPiece(s, fPts, p.sa, 'FRONT LEG', 'CUT 1 PAIR');
+  // Front Pattern Piece (Cut line & Seam line)
+  const fx = 2, sy = 4;
+  const fNetD = `M ${fx} ${sy} L ${fx + w} ${sy} Q ${fx + h} ${sy + p.rise * 0.5}, ${fx + h + fCrotch} ${sy + p.rise} L ${fx + p.hem / 4} ${sy + len} L ${fx} ${sy + len} Z`;
+  mkPath(s, fNetD, '#DC2626', 'none', '0.15 0.15', 0.06);
 
-  // Back Panel
-  const bPts = [[16, 3], [16 + w + 0.5, 3], [16 + h + 1, 3 + p.rise], [16 + p.hem / 4 + 0.5, 3 + len], [16, 3 + len]];
-  drawPatternPiece(s, bPts, p.sa, 'BACK LEG', 'CUT 1 PAIR');
+  // Seam Allowance Cutline Offset
+  const sa = p.sa;
+  const fCutD = `M ${fx - sa} ${sy - sa} L ${fx + w + sa} ${sy - sa} Q ${fx + h + sa} ${sy + p.rise * 0.5}, ${fx + h + fCrotch + sa} ${sy + p.rise + sa} L ${fx + p.hem / 4 + sa} ${sy + len + sa} L ${fx - sa} ${sy + len + sa} Z`;
+  mkPath(s, fCutD, '#000', 'none', '', 0.08);
 
-  addScaleSquare(s, 1, 38);
+  // Grainline
+  line(s, fx + w / 2, sy + 1, fx + w / 2, sy + len - 1, '#2563EB', '', 0.05);
+  txt(s, fx + w / 2, sy + len / 2, 'GRAINLINE', 0.25, 700, '#2563EB', 'middle');
+  txt(s, fx + w / 2, sy + p.rise, 'FRONT LEG - CUT 1 PAIR', 0.35, 900, '#000', 'middle');
+
+  // Back Pattern Piece
+  const bx = 20;
+  const bNetD = `M ${bx} ${sy - 0.5} L ${bx + w + 0.5} ${sy} Q ${bx + h + 0.5} ${sy + p.rise * 0.5}, ${bx + h + bCrotch} ${sy + p.rise} L ${bx + p.hem / 4 + 0.5} ${sy + len} L ${bx} ${sy + len} Z`;
+  mkPath(s, bNetD, '#DC2626', 'none', '0.15 0.15', 0.06);
+
+  const bCutD = `M ${bx - sa} ${sy - 0.5 - sa} L ${bx + w + 0.5 + sa} ${sy - sa} Q ${bx + h + 0.5 + sa} ${sy + p.rise * 0.5}, ${bx + h + bCrotch + sa} ${sy + p.rise + sa} L ${bx + p.hem / 4 + 0.5 + sa} ${sy + len + sa} L ${bx - sa} ${sy + len + sa} Z`;
+  mkPath(s, bCutD, '#000', 'none', '', 0.08);
+
+  line(s, bx + w / 2, sy + 1, bx + w / 2, sy + len - 1, '#2563EB', '', 0.05);
+  txt(s, bx + w / 2, sy + p.rise, 'BACK LEG - CUT 1 PAIR', 0.35, 900, '#000', 'middle');
+
+  addScaleSquare(s, 1, 40);
   return s;
 }
 
+// 4. PARAMETRIC T-SHIRT PATTERN BLOCK
 function patternTee() {
   const p = state.values;
-  const s = svgRoot(34, 36);
-  txt(s, 1, 1.2, 'NOCIV // T-SHIRT PATTERN BLOCK', 0.7, 900);
+  const s = svgRoot(36, 38);
+  txt(s, 1, 1.2, 'NOCIV // T-SHIRT PARAMETRIC DRAFTING PATTERN', 0.7, 900);
 
   const c = (p.chest + p.hemEase) / 4;
-  const fPts = [[2, 3], [2 + c, 3], [2 + c, 3 + p.length], [2, 3 + p.length]];
-  drawPatternPiece(s, fPts, p.sa, 'FRONT TEE', 'CUT 1 ON FOLD');
+  const sh = p.shoulder / 2;
+  const arm = p.armhole;
+  const sa = p.sa;
+  const fx = 3, sy = 4;
 
-  addScaleSquare(s, 1, 32);
+  // Front Net Seamline
+  const fNet = `M ${fx} ${sy + 1.5} Q ${fx + p.neck / 8} ${sy + 1.8}, ${fx + p.neck / 4} ${sy} L ${fx + sh} ${sy + 0.8} Q ${fx + sh - 0.3} ${sy + arm * 0.5}, ${fx + c} ${sy + arm} L ${fx + c} ${sy + p.length} L ${fx} ${sy + p.length} Z`;
+  mkPath(s, fNet, '#DC2626', 'none', '0.15 0.15', 0.06);
+
+  // Front Outer Cutline
+  const fCut = `M ${fx} ${sy + 1.5 - sa} Q ${fx + p.neck / 8} ${sy + 1.8 - sa}, ${fx + p.neck / 4} ${sy - sa} L ${fx + sh + sa} ${sy + 0.8 - sa} Q ${fx + sh + sa} ${sy + arm * 0.5}, ${fx + c + sa} ${sy + arm + sa} L ${fx + c + sa} ${sy + p.length + sa} L ${fx} ${sy + p.length + sa} Z`;
+  mkPath(s, fCut, '#000', 'none', '', 0.08);
+
+  // Fold Indicator
+  line(s, fx, sy + 1, fx, sy + p.length, '#2563EB', '', 0.08);
+  txt(s, fx + 0.4, sy + p.length / 2, 'CENTER FRONT - PLACE ON FOLD', 0.3, 900, '#2563EB');
+  txt(s, fx + c / 2, sy + p.length / 3, 'FRONT TEE BLOCK', 0.35, 900, '#000', 'middle');
+
+  addScaleSquare(s, 1, 34);
   return s;
 }
 
-// --- MAIN RENDER DISPATCHER ---
+// --- RENDER DISPATCHER ---
 function render() {
   const canvas = document.getElementById('canvas');
   canvas.innerHTML = '';
@@ -671,12 +659,11 @@ function render() {
 }
 
 function updateTileEstimate() {
-  // Estimate Letter pages (7.5" x 10" printable printable area)
-  const estTiles = state.mode === 'flat' ? '1 Page (Design Overview)' : '8 - 12 Pages (Full Scale Tiled)';
+  const estTiles = state.mode === 'flat' ? '1 Page (Design Specification)' : '6 - 12 Pages (Full Scale Tiled PDF)';
   document.getElementById('tileSizeEst').textContent = `ESTIMATED TILES: ${estTiles}`;
 }
 
-// --- PRINT & TILING ENGINE ---
+// --- PRINT & EXPORT ENGINE ---
 function openPrint() {
   document.getElementById('modal').classList.remove('hidden');
   document.getElementById('modal').classList.add('flex');
@@ -686,13 +673,13 @@ function openPrint() {
   summary.innerHTML = `OUTPUT CONFIG: US LETTER (8.5" × 11") · SCALE: 100% · BASE: ${BASES[state.base].name} (${state.mode.toUpperCase()})`;
 
   preview.innerHTML = '';
-  const cols = 3, rows = 3; // Simulated 3x3 print layout grid
+  const cols = 3, rows = 3;
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
       const tileLabel = String.fromCharCode(65 + r) + (c + 1);
       const box = el('div', { class: 'border2 p-3 bg-white relative h-36 flex flex-col justify-between mono text-xs' }, `
         <div class="flex justify-between font-bold"><span>TILE ${tileLabel}</span><span>100%</span></div>
-        <div class="text-center text-gray-400 my-auto">✦ CROSSHAIR ALIGN ✦</div>
+        <div class="text-center text-gray-400 my-auto">✦ ALIGNMENT CROSSHAIR ✦</div>
         <div class="text-[9px] text-gray-500">ROW ${r + 1} COL ${c + 1} · TRIM MARGIN</div>
       `);
       preview.appendChild(box);
@@ -709,7 +696,6 @@ function browserPrint() {
   const printContainer = document.getElementById('printout');
   printContainer.innerHTML = '';
 
-  // Generate 4 tiled printable pages with alignment marks
   for (let i = 0; i < 4; i++) {
     const page = el('div', { class: 'print-page mono' });
     const label = 'TILE ' + String.fromCharCode(65 + Math.floor(i / 2)) + ((i % 2) + 1);
@@ -733,42 +719,36 @@ function browserPrint() {
   window.print();
 }
 
-// --- GUIDE MODAL ---
 function openGuide() {
   document.getElementById('guideModal').classList.remove('hidden');
   document.getElementById('guideModal').classList.add('flex');
 }
+
 function closeGuide() {
   document.getElementById('guideModal').classList.add('hidden');
   document.getElementById('guideModal').classList.remove('flex');
 }
 
-// --- EXPORT FUNCTIONS ---
 function downloadSVG() {
   const svgEl = document.querySelector('#canvas svg');
   if (!svgEl) return;
-  const blob = new Blob([svgEl.outerHTML], { type: 'image/svg+xml' });
+  const blob = new Blob([svgEl.outerHTML], { type: 'image/svg+xml;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = `NOCIV-${state.base}-${state.mode}.svg`;
+  a.href = url;
+  a.download = `NOCIV_${state.base}_${state.mode}.svg`;
   a.click();
 }
 
 function downloadTechPack() {
-  const data = {
-    brand: "NOCIV",
-    garment: BASES[state.base].name,
-    specifications: state.values,
-    timestamp: new Date().toISOString()
-  };
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state, null, 2));
   const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = `NOCIV-TechPack-${state.base}.json`;
+  a.href = dataStr;
+  a.download = `NOCIV_${state.base}_spec.json`;
   a.click();
 }
 
-// --- INITIALIZATION ---
+// INITIALIZATION
 window.addEventListener('DOMContentLoaded', () => {
   renderBaseButtons();
   renderControls();
