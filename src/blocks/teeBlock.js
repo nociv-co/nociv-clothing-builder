@@ -59,10 +59,10 @@ function addScaleSquare(svg, x, y) {
   txt(svg, x + 0.5, y + 0.7, 'CALIBRATION', 0.14, 700, '#000', 'middle');
 }
 
-export function draftTeePattern(values, zoom) {
+export function draftTeePattern(values, cut = 'boxy', zoom = 1.0) {
   const p = values;
   const s = svgRoot(38, 42, zoom);
-  txt(s, 1, 1.2, 'NOCIV // BESPOKE UPPER BODY BLOCK', 0.65, 900);
+  txt(s, 1, 1.2, `NOCIV // UPPER BODY BLOCK (${cut.toUpperCase()})`, 0.65, 900);
 
   const chestQ = (p.chest + p.chestEase) / 4;
   const shHalf = p.shoulder / 2;
@@ -135,10 +135,10 @@ export function draftTeePattern(values, zoom) {
   return s;
 }
 
-export function draftTeeFlat(values, zoom) {
+export function draftTeeFlat(values, cut = 'boxy', zoom = 1.0) {
   const p = values;
   const s = svgRoot(28, 32, zoom);
-  txt(s, 1, 1.2, 'NOCIV // TECHNICAL FLAT - TOP', 0.65, 900);
+  txt(s, 1, 1.2, `NOCIV // TECHNICAL FLAT - TOP (${cut.toUpperCase()})`, 0.65, 900);
   const c = (p.chest + p.chestEase) / 4;
   const fx = 6, sy = 4;
 
