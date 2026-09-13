@@ -59,10 +59,10 @@ function addScaleSquare(svg, x, y) {
   txt(svg, x + 0.5, y + 0.7, 'CALIBRATION', 0.14, 700, '#000', 'middle');
 }
 
-export function draftSleevePattern(values, zoom) {
+export function draftSleevePattern(values, cut = 'set_in', zoom = 1.0) {
   const p = values;
   const s = svgRoot(30, 28, zoom);
-  txt(s, 1, 1.2, 'NOCIV // SET-IN SLEEVE PATTERN BLOCK', 0.65, 900);
+  txt(s, 1, 1.2, `NOCIV // ${cut.toUpperCase()} SLEEVE PATTERN BLOCK`, 0.65, 900);
 
   const armD = 9.5;
   const capHeight = armD * 0.62;
@@ -87,7 +87,7 @@ export function draftSleevePattern(values, zoom) {
     C ${cx - (bicepW * 0.5) + 1.5} ${sy + (capHeight * 0.8)}, ${cx - 2.5} ${sy - sa}, ${cx} ${sy - sa}
     C ${cx + 2.5} ${sy - sa}, ${cx + (bicepW * 0.5) - 1.5} ${sy + (capHeight * 0.8)}, ${cx + (bicepW * 0.5) + sa} ${sy + capHeight + sa}
     L ${cx + (hemW * 0.5) + sa} ${sy + slLen + sa}
-    L ${cx - (hemW * 0.5)} - sa} ${sy + slLen + sa}
+    L ${cx - (hemW * 0.5) - sa} ${sy + slLen + sa}
     Z
   `;
   mkPath(s, sCutD, '#000', 'none', '', 0.08);
@@ -96,5 +96,13 @@ export function draftSleevePattern(values, zoom) {
   txt(s, cx, sy + (slLen * 0.5), 'SLEEVE BLOCK (CUT 1 PAIR)', 0.35, 900, '#000', 'middle');
 
   addScaleSquare(s, 1, 24);
+  return s;
+}
+
+export function draftSleeveFlat(values, cut = 'set_in', zoom = 1.0) {
+  const s = svgRoot(20, 20, zoom);
+  txt(s, 1, 1.2, `NOCIV // ${cut.toUpperCase()} SLEEVE FLAT`, 0.65, 900);
+  mkPath(s, `M 6 4 L 14 4 L 12 16 L 8 16 Z`, '#000', '#fff', '', 0.1);
+  addScaleSquare(s, 1, 16);
   return s;
 }
