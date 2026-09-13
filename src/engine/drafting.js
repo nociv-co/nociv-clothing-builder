@@ -1,15 +1,39 @@
 import { draftTrouserPattern, draftTrouserFlat } from '../blocks/trouserBlock.js';
 import { draftTeePattern, draftTeeFlat } from '../blocks/teeBlock.js';
-import { draftSleevePattern } from '../blocks/sleeveBlock.js';
+import { draftHeadwearPattern, draftHeadwearFlat } from '../blocks/headwearBlock.js';
+import { draftBagPattern, draftBagFlat } from '../blocks/bagBlock.js';
 
 export function renderDraftingCanvas(state) {
-  let svg;
+  const archetype = state.archetype || 'pants';
+  const cut = state.selectedCut || 'straight';
+  const values = state.values;
+  const zoom = state.zoom || 1.0;
+
   if (state.mode === 'flat') {
-    svg = state.base === 'pants' ? draftTrouserFlat(state.values, state.zoom) : draftTeeFlat(state.values, state.zoom);
+    switch (archetype) {
+      case 'pants':
+        return draftTrouserFlat(values, cut, zoom);
+      case 'tshirt':
+        return draftTeeFlat(values, cut, zoom);
+      case 'headwear':
+        return draftHeadwearFlat(values, cut, zoom);
+      case 'bags':
+        return draftBagFlat(values, cut, zoom);
+      default:
+        return draftTrouserFlat(values, cut, zoom);
+    }
   } else {
-    if (state.base === 'pants') svg = draftTrouserPattern(state.values, state.zoom);
-    else if (state.base === 'tshirt') svg = draftTeePattern(state.values, state.zoom);
-    else svg = draftSleevePattern(state.values, state.zoom);
+    switch (archetype) {
+      case 'pants':
+        return draftTrouserPattern(values, cut, zoom);
+      case 'tshirt':
+        return draftTeePattern(values, cut, zoom);
+      case 'headwear':
+        return draftHeadwearPattern(values, cut, zoom);
+      case 'bags':
+        return draftBagPattern(values, cut, zoom);
+      default:
+        return draftTrouserPattern(values, cut, zoom);
+    }
   }
-  return svg;
 }
