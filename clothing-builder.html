@@ -193,10 +193,98 @@
     .sum { margin-top: 6px; font-size: 0.8rem; }
   }
   nav.steps button svg { display: none; }
+
+  /* ===== App layout (Jasilyn's sketch, Oct 13): locked screen, header, big viewer, icon steps, one panel with drop downs ===== */
+  html.app, html.app body { height: 100%; overflow: hidden; overscroll-behavior: none; }
+  html.app body { padding: 0 !important; }
+  .app .wrap { max-width: none; height: 100vh; height: 100dvh; padding: env(safe-area-inset-top) 0 0; display: flex; flex-direction: column; }
+  .app .top, .app .toolrow { display: none !important; }
+  .csbar { flex: none; position: relative; z-index: 40; display: flex; align-items: center; gap: 10px; padding: 8px 12px 8px 14px; background: var(--paper); border-bottom: 2px solid var(--ink); }
+  .cslogo { flex: 1; min-width: 0; display: flex; align-items: center; gap: 5px; font-weight: 900; font-size: 30px; line-height: 1; letter-spacing: .02em; color: var(--paper); -webkit-text-stroke: 1.6px var(--ink); paint-order: stroke fill; text-shadow: 2px 2px 0 var(--ink); white-space: nowrap; }
+  .cslogo i { font-style: normal; font-size: 13px; -webkit-text-stroke: 0; text-shadow: none; color: #fff; background: var(--ink); padding: 3px 3px; line-height: 1; transform: rotate(-4deg); }
+  .cshow { flex: none; display: flex; flex-direction: column; align-items: center; gap: 2px; }
+  .cshow small { font-size: 9px; font-weight: 900; letter-spacing: .14em; color: var(--soft); }
+  .cshow div { display: flex; align-items: center; border: 2px solid var(--ink); background: #fff; box-shadow: 2px 2px 0 var(--ink); }
+  .cshow button { font: inherit; font-size: 13px; font-weight: 900; border: none; background: none; color: var(--ink); width: 30px; height: 30px; cursor: pointer; -webkit-tap-highlight-color: transparent; padding: 0; }
+  .cshow b { font-family: "SF Mono", Menlo, Consolas, monospace; font-size: 11px; min-width: 54px; text-align: center; }
+  .csmenu-btn { flex: none; width: 42px; height: 42px; border: 2px solid var(--ink); background: var(--ink); color: #fff; display: grid; place-items: center; cursor: pointer; padding: 0; -webkit-tap-highlight-color: transparent; }
+  .csmenu-btn svg { width: 22px; height: 22px; }
+  .csmenu { position: absolute; right: 10px; top: calc(100% + 6px); width: 270px; max-width: calc(100vw - 20px); background: #fff; border: 2px solid var(--ink); box-shadow: 4px 4px 0 var(--ink); padding: 6px; display: grid; gap: 4px; }
+  .csmenu button { font: inherit; text-align: left; background: none; border: none; padding: 12px 10px; cursor: pointer; font-weight: 900; font-size: 0.95rem; color: var(--ink); display: flex; flex-direction: column; gap: 2px; }
+  .csmenu button small { font-weight: 600; font-size: 0.78rem; color: var(--soft); }
+  .csmenu button + button { border-top: 1.5px solid var(--line); }
+  .app .grid { flex: 1; min-height: 0; margin: 0; display: flex; flex-direction: column; gap: 0; align-items: stretch; }
+  .app .preview-col { position: relative !important; top: auto !important; flex: 1 1 0; min-height: 160px; display: flex; flex-direction: column; margin: 0 !important; padding: 10px 10px 0 !important; border: 0 !important; box-shadow: none !important; background: var(--paper); z-index: 2; }
+  .app .preview-col .stage { flex: 1; min-height: 0; height: auto !important; }
+  .app .preview-col.focused .stage { flex: none; height: calc(100vh - 90px) !important; height: calc(100dvh - 90px - env(safe-area-inset-top) - env(safe-area-inset-bottom)) !important; }
+  .app .preview-col.focused { padding: 0 !important; }
+  .app .preview-col .pieces, .app .preview-col .checks { display: none !important; }
+  .app .stage .sum { position: absolute; left: 8px; top: 8px; z-index: 5; margin: 0; max-width: calc(100% - 16px); font-family: "SF Mono", Menlo, Consolas, monospace; font-size: 10px; font-weight: 800; text-align: left; background: rgba(255,255,255,.9); border: 1.5px solid #0F0F0F; padding: 4px 7px; pointer-events: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .app .stage .sum span { font-weight: 600; }
+  .app .vmenu { top: auto; left: auto; right: 58px; bottom: 8px; }
+  .app .vbtn { height: 42px; padding: 0 12px; }
+  .app .vdrop { position: absolute; right: -50px; bottom: calc(100% + 8px); margin: 0; }
+  .app #view, .app .vdrop .vlab:first-child { display: none !important; }
+  .app.stepped .preview-col > nav.steps { position: static !important; display: grid !important; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 4px; padding: 8px 0 8px !important; margin: 0 !important; background: none !important; border: 0 !important; overflow: visible; }
+  .app.stepped .preview-col > nav.steps button { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; border: 2px solid var(--ink) !important; background: #fff; color: var(--ink); border-radius: 12px; padding: 6px 1px 5px !important; font-size: 0.6rem; font-weight: 800; min-width: 0; white-space: nowrap; overflow: hidden; box-shadow: 2px 2px 0 var(--ink); }
+  .app.stepped .preview-col > nav.steps button b { display: none; }
+  .app.stepped .preview-col > nav.steps button svg { display: block !important; width: 22px; height: 22px; }
+  .app.stepped .preview-col > nav.steps button[aria-selected="true"] { background: var(--ink); color: #fff; }
+  .app .grid > section.note { transform: none !important; box-shadow: none; border-top: 2px solid var(--ink); }
+  .app .grid > section.note::before { display: none; }
+  .app.stepped .grid > section.note.on { flex: 0 0 46%; min-height: 0; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; padding: 16px 14px 0; display: flex; flex-direction: column; }
+  .app .grid > section.note.on > * { flex: none; }
+  .app .grid > section.note h2 { display: flex; align-items: center; gap: 8px; font-size: 1.05rem; margin-bottom: 14px; }
+  .app .grid > section.note h2 b { display: inline-grid; place-items: center; min-width: 30px; height: 30px; padding: 0; margin: 0; background: none; color: var(--ink); border: 2px solid var(--ink); font-size: 1rem; }
+  .app .next-step { position: sticky; bottom: 10px; margin: auto 0 0 auto !important; width: auto !important; padding: 12px 18px !important; border-radius: 0 !important; border: 2px solid var(--ink) !important; background: var(--ink) !important; color: #fff !important; font-size: 0.85rem !important; letter-spacing: .06em !important; text-transform: uppercase; box-shadow: 0 0 0 10px var(--note), -150px 0 0 10px var(--note), -300px 0 0 10px var(--note), -450px 0 0 10px var(--note), -600px 0 0 10px var(--note); z-index: 3; }
+  .app .grid > section.note.on { overflow-x: hidden; }
+  .app .grid > section.note.on::after { content: ''; display: block; flex: none; height: 14px; }
+  .app.stepped .grid > section.note .chips { flex-wrap: wrap !important; overflow: visible !important; margin-right: 0 !important; padding-right: 0 !important; }
+  /* Drop downs: a group shows its name and what is picked, tap to open */
+  .dd { margin: 0 0 8px; }
+  .dd > .group-name { margin: 0; display: flex; align-items: center; justify-content: space-between; gap: 10px; background: #fff; border: 2px solid var(--ink); padding: 12px 12px; cursor: pointer; -webkit-tap-highlight-color: transparent; user-select: none; -webkit-user-select: none; }
+  .dd > .group-name::after { content: attr(data-sel) "  \25BE"; font-weight: 700; letter-spacing: 0; text-transform: none; font-size: 0.85rem; color: var(--soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 55%; }
+  .dd.open > .group-name { background: var(--ink); color: #fff; }
+  .dd.open > .group-name::after { content: attr(data-sel) "  \25B4"; color: #d8d2c3; }
+  .dd:not(.open) > :not(.group-name) { display: none !important; }
+  .dd.open > :not(.group-name) { margin-top: 0; }
+  .dd.open { border: 2px solid var(--ink); background: rgba(255,255,255,.45); }
+  .dd.open > .group-name { border: 0; }
+  .dd.open > :not(.group-name) { margin-left: 10px !important; margin-right: 10px !important; }
+  .dd.open > :nth-child(2) { margin-top: 10px !important; }
+  .dd.open > :last-child { margin-bottom: 10px !important; }
+  /* Step 1: four family buttons, then the list for that family fills the space */
+  .fams { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+  .fams button { font: inherit; font-weight: 900; font-size: 0.85rem; letter-spacing: .06em; text-transform: uppercase; padding: 12px 2px; border: 2px solid var(--ink); background: #fff; color: var(--ink); cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  .fams button[aria-pressed="true"] { background: var(--ink); color: #fff; }
+  .famlist { margin-top: 8px; border: 2px solid var(--ink); background: #fff; display: grid; }
+  .famlist button { font: inherit; text-align: left; display: flex; justify-content: space-between; align-items: center; gap: 10px; border: none; background: none; padding: 13px 12px; font-size: 0.95rem; font-weight: 800; color: var(--ink); cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  .famlist button + button { border-top: 1.5px solid var(--line); }
+  .famlist button[aria-pressed="true"] { background: var(--note); }
+  .famlist button[aria-pressed="true"]::after { content: '\2713'; color: var(--red); font-weight: 900; }
+  .famlist button:disabled { color: var(--soft); cursor: default; }
+  .famlist button small { font-weight: 700; font-size: 0.72rem; text-transform: uppercase; letter-spacing: .06em; }
+  @media (min-width: 900px) {
+    .app .grid { flex-direction: row; }
+    .app .preview-col { order: 2; padding: 12px 14px 0 !important; }
+    .app.stepped .grid > section.note.on { order: 1; flex: 0 0 420px; border-top: 0; border-right: 2px solid var(--ink); }
+    .cslogo { font-size: 34px; }
+  }
+  @media (max-height: 620px) and (max-width: 899px) { .app.stepped .grid > section.note.on { flex-basis: 50%; } .app.stepped .preview-col > nav.steps button { font-size: 0; gap: 0; } }
 </style>
 </head>
 <body>
 <div class="wrap">
+  <header class="csbar">
+    <span class="cslogo" aria-label="Cut and Sew">CUT<i>&amp;</i>SEW</span>
+    <div class="cshow"><small>SHOW</small><div><button type="button" id="vPrev" aria-label="Show the last view">&#9664;</button><b id="vNow">PIECES</b><button type="button" id="vNext" aria-label="Show the next view">&#9654;</button></div></div>
+    <button type="button" class="csmenu-btn" id="csMenuBtn" aria-label="Menu" aria-expanded="false" aria-controls="csMenu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+    <div class="csmenu" id="csMenu" hidden>
+      <button type="button" data-a="learn">Learn<small>Tech flats, measuring, sewing basics</small></button>
+      <button type="button" data-a="copy">Copy a piece you love<small>Photo of your favorite garment, we measure it</small></button>
+      <button type="button" data-a="sew">How to sew guide<small>Pockets, zippers, sleeves, waistbands</small></button>
+    </div>
+  </header>
   <div class="top">
     <h1><span>CUT</span> &amp; SEW</h1>
     <p>Make your own clothes. Put in your measurements, print the pattern life size at home or at a copy shop, cut it, sew it. Free, no sign up.</p>
@@ -591,7 +679,7 @@
       }
     });
     var mq = matchMedia('(max-width: 899px)');
-    function place() { if (mq.matches && prev) prev.appendChild(nav); else grid.insertBefore(nav, grid.firstChild); }
+    function place() { if (prev) prev.appendChild(nav); else grid.insertBefore(nav, grid.firstChild); }
     function show(i, scroll) {
       cur = Math.max(0, Math.min(notes.length - 1, i));
       notes.forEach(function (n, j) { n.classList.toggle('on', j === cur); });
@@ -643,6 +731,7 @@
   'use strict';
   var $ = function (id) { return document.getElementById(id); };
   if (window.self !== window.top) document.documentElement.classList.add('in-frame');
+  document.documentElement.classList.add('app');
 
   // =====================================================================
   // GEOMETRY. Everything is in inches. y goes down.
@@ -1530,18 +1619,27 @@
       box.appendChild(b);
     });
   }
+  var viewFam = null;
   function buildGarments() {
     var box = $('garments'); box.innerHTML = '';
+    var fam = viewFam || famOf(state.g);
+    var top = document.createElement('div'); top.className = 'fams'; box.appendChild(top);
     GROUPS.forEach(function (g) {
-      var h = document.createElement('div'); h.className = 'group-name'; h.textContent = g.name; box.appendChild(h);
-      var c = document.createElement('div'); c.className = 'chips'; box.appendChild(c);
-      chipsFrom(c, g.items, state.g, function (v) {
-        var oldFam = famOf(state.g); state.g = v;
+      var b = document.createElement('button'); b.type = 'button'; b.textContent = g.name; b.setAttribute('aria-pressed', String(g.id === fam));
+      b.onclick = function () { viewFam = g.id; buildGarments(); }; top.appendChild(b);
+    });
+    var g = GROUPS.filter(function (x) { return x.id === fam; })[0], list = document.createElement('div'); list.className = 'famlist'; box.appendChild(list);
+    g.items.forEach(function (it) {
+      var b = document.createElement('button'); b.type = 'button'; b.setAttribute('aria-pressed', String(it[0] === state.g));
+      b.textContent = it[1]; if (it[2]) { b.disabled = true; b.insertAdjacentHTML('beforeend', '<small>soon</small>'); }
+      b.onclick = function () {
+        var v = it[0], oldFam = famOf(state.g); state.g = v; viewFam = null;
         if (v === 'tote') { state.m.width = 14; state.m.height = 15; state.m.depth = 4; state.m.strap = 24; }
         if (v === 'minitote') { state.m.width = 10; state.m.height = 10; state.m.depth = 3; state.m.strap = 20; }
         if (famOf(v) !== oldFam) state.fit = famOf(v) === 'tops' ? 'regular' : 'relaxed';
         buildAll();
-      });
+      };
+      list.appendChild(b);
     });
   }
   function buildFields() {
@@ -2445,6 +2543,62 @@
       var nm = b.textContent.replace(/^\d+/, ''); if (!ICON[nm]) return;
       b.insertAdjacentHTML('afterbegin', '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + ICON[nm] + '</svg>');
     });
+  })();
+
+  // ---------- app shell: header view arrows, menu, drop downs ----------
+  (function () {
+    var VIEWS = ['pieces', 'pages', 'flat'], NAMES = { pieces: 'PIECES', pages: 'PAGES', flat: 'FLAT' };
+    function go(d) { var i = (VIEWS.indexOf(state.view) + d + VIEWS.length) % VIEWS.length, b = $('view').querySelector('[data-v="' + VIEWS[i] + '"]'); if (b) b.click(); }
+    $('vPrev').onclick = function () { go(-1); }; $('vNext').onclick = function () { go(1); };
+    window.__setViewName = function () { $('vNow').textContent = NAMES[state.view]; $('vName').textContent = $('zLbl').textContent; };
+    $('stage').appendChild($('sum'));
+    var mb = $('csMenuBtn'), menu = $('csMenu');
+    function setMenu(o) { menu.hidden = !o; mb.setAttribute('aria-expanded', String(o)); }
+    mb.addEventListener('click', function (e) { e.stopPropagation(); setMenu(menu.hidden); });
+    document.addEventListener('click', function () { setMenu(false); });
+    menu.addEventListener('click', function (e) {
+      var b = e.target.closest('[data-a]'); if (!b) return; setMenu(false);
+      if (b.dataset.a === 'learn') window.nocivLearn(0); else if (b.dataset.a === 'sew') window.nocivLearn(5); else $('measureBtn').click();
+    });
+    document.addEventListener('nociv-step', function () { var on = document.querySelector('section.note.on'); if (on) on.scrollTop = 0; });
+    // Drop downs: wrap every group name with what follows it, show the pick on the closed row.
+    var OPEN = {}, STOP = 'group-name next-step btn tip files'.split(' ');
+    function stops(el) { return !el || el.tagName === 'DETAILS' || STOP.some(function (c) { return el.classList.contains(c); }); }
+    function key(dd) { var s = dd.closest('section'); return (s ? s.dataset.step : '') + '/' + dd.firstChild.textContent; }
+    function ddify() {
+      document.querySelectorAll('section.note .group-name').forEach(function (h) {
+        if (h.parentNode.classList.contains('dd')) return;
+        var dd = document.createElement('div'); dd.className = 'dd'; h.parentNode.insertBefore(dd, h); dd.appendChild(h);
+        while (dd.nextSibling && (dd.nextSibling.nodeType !== 1 || !stops(dd.nextSibling))) dd.appendChild(dd.nextSibling);
+        h.setAttribute('role', 'button'); h.setAttribute('tabindex', '0');
+        if (OPEN[key(dd)]) dd.classList.add('open');
+        h.setAttribute('aria-expanded', String(dd.classList.contains('open')));
+      });
+      document.querySelectorAll('.dd').forEach(function (dd) {
+        var p = dd.querySelector('.chip[aria-pressed="true"]'), t = '';
+        if (p) { var c = p.cloneNode(true), sm = c.querySelector('small'); if (sm) sm.remove(); t = c.textContent.trim(); }
+        else { var inp = dd.querySelector('input[type=text], input[type=number], textarea'); if (inp && inp.value) t = inp.value.slice(0, 24); }
+        if (dd.firstChild.getAttribute('data-sel') !== t) dd.firstChild.setAttribute('data-sel', t);
+      });
+    }
+    function toggle(dd, o) {
+      var sec = dd.closest('section');
+      if (o) sec.querySelectorAll('.dd.open').forEach(function (x) { if (x !== dd) { x.classList.remove('open'); x.firstChild.setAttribute('aria-expanded', 'false'); delete OPEN[key(x)]; } });
+      dd.classList.toggle('open', o); dd.firstChild.setAttribute('aria-expanded', String(o));
+      if (o) OPEN[key(dd)] = 1; else delete OPEN[key(dd)];
+      if (o) setTimeout(function () { var r = dd.getBoundingClientRect(), sr = sec.getBoundingClientRect(); if (r.top < sr.top || r.top > sr.top + sr.height * 0.45) sec.scrollTop += r.top - sr.top - 8; }, 0);
+    }
+    document.addEventListener('click', function (e) {
+      var h = e.target.closest('.dd > .group-name');
+      if (h) { toggle(h.parentNode, !h.parentNode.classList.contains('open')); return; }
+      var c = e.target.closest('.dd .chip');
+      if (c) { var dd = c.closest('.dd'); delete OPEN[key(dd)]; setTimeout(function () { if (dd.isConnected) toggle(dd, false); ddify(); }, 0); }
+    }, true);
+    document.addEventListener('keydown', function (e) { var h = e.target.closest && e.target.closest('.dd > .group-name'); if (h && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); toggle(h.parentNode, !h.parentNode.classList.contains('open')); } });
+    document.addEventListener('input', function () { ddify(); });
+    var mo = new MutationObserver(function () { ddify(); });
+    mo.observe(document.querySelector('.grid'), { childList: true, subtree: true, attributes: true, attributeFilter: ['aria-pressed'] });
+    ddify();
   })();
 
   // Exposed for testing only.
