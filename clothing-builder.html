@@ -565,6 +565,7 @@
 </article>
 </div></div>
 
+<script src="crop.js"></script>
 <script>
 /* ===== NOCIV tool shell: step tabs, page zoom lock, big locked artboard ===== */
 (function () {
@@ -2263,8 +2264,8 @@
     }
   }
   $('tpArt').addEventListener('change', function (e) {
-    var f = e.target.files[0]; if (!f) return;
-    var rd = new FileReader(); rd.onload = function () { tpArt = rd.result; $('tpArtName').textContent = f.name; render(); }; rd.readAsDataURL(f);
+    var f = e.target.files[0]; e.target.value = ''; if (!f) return;
+    window.nocivCrop(f, { title: 'Crop your artwork', aspects: [['free', 'Free'], ['orig', 'Original'], [1, 'Square'], [4 / 5, '4:5'], [3 / 2, '3:2']], maxPx: 2000 }).then(function (c) { if (!c) return; tpArt = c.toDataURL('image/png'); $('tpArtName').textContent = f.name; render(); });
   });
 
   // =====================================================================
