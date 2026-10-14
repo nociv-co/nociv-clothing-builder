@@ -6,13 +6,13 @@
 <title>Cut &amp; Sew: NOCIV.CO</title>
 <meta name="description" content="Free sewing patterns made from your own measurements. Print them life size at home or at a copy shop. From NOCIV.CO.">
 <style>
-  :root { --paper: #efece5; --note: #f8f4e8; --ink: #1d1c1a; --soft: #5f5a50; --line: #d8d2c3; --red: #c8412f; --green: #2f7a4b; }
+  :root { --paper: #e9e6df; --note: #f2ecd6; --ink: #1a1a1a; --soft: #6b665c; --line: #d8d2c3; --red: #c8412f; --green: #2f7a4b; }
   * { box-sizing: border-box; }
   html, body { margin: 0; background: var(--paper); color: var(--ink); }
   body { font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif; -webkit-text-size-adjust: 100%; line-height: 1.45; }
   .wrap { max-width: 1040px; margin: 0 auto; padding: 22px 16px 70px; }
-  .top h1 { margin: 0; font-size: clamp(30px, 8vw, 46px); font-weight: 900; letter-spacing: 0.03em; line-height: 1.05; }
-  .top h1 span { background: var(--ink); color: #fff; padding: 2px 12px; border-radius: 6px; display: inline-block; transform: rotate(-1.2deg); }
+  .top h1 { margin: 0; font-size: clamp(30px, 8vw, 46px); font-weight: 900; letter-spacing: 0.04em; line-height: 1; }
+  .top h1 span { background: var(--ink); color: #fff; padding: 2px 10px; display: inline-block; transform: rotate(-1.5deg); }
   .top p { margin: 12px 0 0; font-size: 1rem; max-width: 600px; color: #3a3833; }
   .in-frame .top { display: none; }
 
@@ -27,22 +27,23 @@
     .legend { font-size: 9px; }
   }
 
-  .note { background: var(--note); border-radius: 14px; padding: 22px 18px 18px; box-shadow: 0 3px 14px rgba(40,30,10,.08); position: relative; }
-  .note::before { content: ''; position: absolute; top: -9px; left: 24px; width: 58px; height: 18px; background: rgba(29,28,26,.75); border-radius: 2px; transform: rotate(-3deg); }
-  .note h2 { margin: 0 0 12px; font-size: 0.95rem; font-weight: 900; letter-spacing: 0.08em; text-transform: uppercase; display: flex; align-items: center; gap: 8px; }
-  .note h2 b { background: var(--red); color: #fff; width: 24px; height: 24px; border-radius: 50%; display: inline-grid; place-items: center; font-size: 0.8rem; letter-spacing: 0; }
-  .group-name { font-size: 0.72rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--soft); margin: 12px 0 6px; }
+  .note { background: var(--note); padding: 26px 18px 20px; box-shadow: 0 6px 16px rgba(0,0,0,0.16); position: relative; }
+  .note::before { content: ''; position: absolute; top: -11px; left: 22px; width: 64px; height: 22px; background: var(--ink); opacity: .85; transform: rotate(-3deg); }
+  .note:nth-of-type(even) { transform: rotate(0.4deg); }
+  .note h2 { margin: 0 0 12px; font-size: 1rem; font-weight: 900; letter-spacing: 0.08em; text-transform: uppercase; }
+  .note h2 b { background: var(--red); color: #fff; padding: 1px 7px; margin-right: 6px; }
+  .group-name { font-size: 0.72rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink); margin: 14px 0 6px; }
   .chips { display: flex; flex-wrap: wrap; gap: 8px; }
-  .chip { font: inherit; font-size: 0.88rem; font-weight: 700; padding: 9px 14px; border: 1.5px solid var(--ink); background: #fff; color: var(--ink); border-radius: 999px; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  .chip { font: inherit; font-size: 0.85rem; font-weight: 700; padding: 10px 13px; border: 2px solid var(--ink); background: #fff; color: var(--ink); border-radius: 0; cursor: pointer; -webkit-tap-highlight-color: transparent; }
   .chip[aria-pressed="true"] { background: var(--ink); color: #fff; }
-  .chip:disabled { opacity: .45; border-style: dashed; cursor: default; }
+  .chip:disabled { opacity: .4; border-style: dashed; cursor: default; }
   .chip small { font-weight: 600; font-size: 0.7rem; opacity: .8; margin-left: 4px; }
 
   .fields { display: grid; gap: 14px; margin-top: 14px; }
-  .field label { display: flex; justify-content: space-between; align-items: baseline; font-size: 0.85rem; font-weight: 800; }
+  .field label { display: flex; justify-content: space-between; align-items: baseline; font-size: 0.72rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; }
   .field label i { font-style: normal; font-weight: 600; color: var(--soft); font-size: 0.78rem; }
   .field .row { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
-  .field input { width: 100%; font: inherit; font-size: 17px; padding: 11px 12px; border: 1.5px solid var(--ink); border-radius: 10px; background: #fff; color: var(--ink); }
+  .field input { width: 100%; font: inherit; font-size: 16px; padding: 13px 12px; border: 2px solid var(--ink); border-radius: 0; background: #fff; color: var(--ink); }
   .field .unit { font-weight: 800; font-size: 0.85rem; min-width: 22px; }
   .field p { margin: 5px 0 0; font-size: 0.8rem; color: var(--soft); }
   .field.bad input { border-color: var(--red); }
@@ -70,15 +71,15 @@
   @media (max-width: 899px) { .checks, .pieces { display: none; } }
   .pieces { font-size: 0.8rem; color: var(--soft); margin: 8px 0 0; }
 
-  .btn { display: block; width: 100%; text-align: center; font: inherit; font-weight: 900; letter-spacing: 0.08em; text-transform: uppercase; font-size: 0.95rem; padding: 16px; border: none; border-radius: 12px; cursor: pointer; -webkit-tap-highlight-color: transparent; background: var(--red); color: #fff; margin-top: 14px; box-shadow: 0 4px 12px rgba(200,65,47,.25); }
+  .btn { display: block; width: 100%; text-align: center; font: inherit; font-weight: 900; letter-spacing: 0.1em; text-transform: uppercase; font-size: 1rem; padding: 16px; border: none; border-radius: 0; cursor: pointer; -webkit-tap-highlight-color: transparent; background: var(--red); color: #fff; margin-top: 14px; }
   .btn:disabled { opacity: .55; }
   .files { margin-top: 12px; display: grid; gap: 8px; }
-  .file { display: flex; align-items: center; gap: 10px; background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 8px 8px 8px 12px; }
+  .file { display: flex; align-items: center; gap: 10px; background: #fff; border: 2px solid var(--ink); padding: 8px 8px 8px 12px; }
   .file span { flex: 1; font-size: 0.88rem; font-weight: 700; }
-  .file button { font: inherit; font-weight: 900; font-size: 0.78rem; letter-spacing: 0.06em; text-transform: uppercase; background: var(--ink); color: #fff; border: none; border-radius: 8px; padding: 10px 14px; cursor: pointer; }
-  .steps { margin: 6px 0 0; padding-left: 20px; font-size: 0.9rem; }
-  .steps li { margin: 0 0 8px; }
-  .tip { background: #fff; border-radius: 10px; padding: 10px 12px; font-size: 0.85rem; margin-top: 12px; border-left: 4px solid var(--red); }
+  .file button { font: inherit; font-weight: 900; font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; background: var(--ink); color: #fff; border: none; padding: 10px 14px; cursor: pointer; }
+  .sewsteps { margin: 6px 0 0; padding-left: 20px; font-size: 0.9rem; line-height: 1.5; }
+  .sewsteps li { margin: 0 0 8px; }
+  .tip { background: #fff; padding: 10px 12px; font-size: 0.85rem; margin-top: 12px; border-left: 4px solid var(--red); }
   details summary { cursor: pointer; font-weight: 800; }
   [hidden] { display: none !important; }
   /* ===== NOCIV tool shell: step tabs, page zoom lock, big locked artboard ===== */
@@ -180,7 +181,7 @@
 
     <section class="note" data-step="Sew">
       <h2><b>5</b> How to sew it</h2>
-      <ol class="steps" id="steps"></ol>
+      <ol class="sewsteps" id="steps"></ol>
       <div class="tip">First time with a new pattern? Make a test one from cheap fabric (an old sheet works). Patterns from measurements get you close, a test gets you the rest of the way.</div>
     </section>
   </div>
