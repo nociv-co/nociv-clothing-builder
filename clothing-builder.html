@@ -165,6 +165,34 @@
   .pmout { display: grid; gap: 4px; } .pmrow { display: flex; justify-content: space-between; gap: 10px; background: #fff; border: 2px solid var(--ink); padding: 8px 10px; font-size: 0.85rem; } .pmrow b { white-space: nowrap; }
   @media (min-width: 900px) { .pmwork { flex-direction: row; } .pmpanel { width: 360px; max-height: none; } }
   .done-note { background: #fff; border-left: 4px solid var(--green); padding: 10px 12px; font-size: 0.85rem; margin-top: 12px; }
+
+  /* ===== Zine style app layout: viewer up top, one dropdown for the viewer, steps as a bottom bar on phones ===== */
+  .toolrow { display: flex; align-items: center; gap: 6px; margin-top: 12px; }
+  .toolrow { justify-content: flex-end; } .toolrow .tbrand { display: none; } .in-frame .toolrow .tbrand { display: block; }
+  .in-frame .toolrow .tbrand { flex: 1; font-weight: 900; letter-spacing: .06em; font-size: 0.95rem; white-space: nowrap; }
+  .toolrow .tbrand b { background: var(--ink); color: #fff; padding: 1px 7px; margin-right: 3px; }
+  .toolrow button { flex: none !important; padding: 8px 13px !important; font-size: 0.72rem !important; border-radius: 999px; border-width: 1.5px !important; }
+  .in-frame .toolrow { margin-top: 0; }
+  .vmenu { position: absolute; top: 8px; left: 8px; z-index: 6; }
+  .vbtn { font-family: "SF Mono", Menlo, Consolas, monospace; font-size: 11px; font-weight: 800; background: #fff; color: #0F0F0F; border: 2px solid #0F0F0F; box-shadow: 2px 2px 0 #0F0F0F; padding: 7px 10px; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  .vbtn i { font-style: normal; font-size: 9px; display: inline-block; transition: transform .15s; } .vbtn[aria-expanded="true"] i { transform: rotate(180deg); }
+  .vdrop { margin-top: 6px; background: #fff; border: 2px solid #0F0F0F; box-shadow: 3px 3px 0 #0F0F0F; padding: 8px; width: 250px; max-width: calc(100vw - 60px); }
+  .vdrop[hidden] { display: none !important; }
+  .vlab { font-family: "SF Mono", Menlo, Consolas, monospace; font-size: 9px; font-weight: 800; color: #6b665c; margin: 6px 0 4px; } .vlab:first-child { margin-top: 0; }
+  .vdrop .vgroup { box-shadow: none; display: inline-flex; }
+  .vdrop .legend { margin: 0; display: grid; gap: 2px; font-size: 10px; }
+  @media (max-width: 899px) {
+    .preview-col .stage { height: 44vh; height: 44svh; }
+    html.stepped body { padding-bottom: calc(76px + env(safe-area-inset-bottom)); }
+    html.stepped { scroll-padding-bottom: calc(90px + env(safe-area-inset-bottom)); scroll-padding-top: 46svh; }
+    .stepped .preview-col > nav.steps { position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; display: grid; grid-template-columns: repeat(6, 1fr); gap: 3px; padding: 6px 6px max(8px, env(safe-area-inset-bottom)); background: var(--paper); border-top: 1.5px solid var(--line); overflow: visible; margin: 0; }
+    .stepped .preview-col > nav.steps button { flex-direction: column; justify-content: center; gap: 3px; border: 1.5px solid transparent; background: none; border-radius: 12px; padding: 6px 1px 5px; font-size: 0.62rem; font-weight: 800; min-width: 0; white-space: nowrap; overflow: hidden; }
+    .stepped .preview-col > nav.steps button b { display: none; }
+    .stepped .preview-col > nav.steps button svg { width: 22px; height: 22px; display: block; }
+    .stepped .preview-col > nav.steps button[aria-selected="true"] { background: var(--ink); color: #fff; }
+    .sum { margin-top: 6px; font-size: 0.8rem; }
+  }
+  nav.steps button svg { display: none; }
 </style>
 </head>
 <body>
@@ -174,18 +202,24 @@
     <p>Make your own clothes. Put in your measurements, print the pattern life size at home or at a copy shop, cut it, sew it. Free, no sign up.</p>
   </div>
 
-  <div class="toolrow"><button type="button" id="learnBtn">Learn: sewing + tech flats</button><button type="button" id="measureBtn">Measure a piece you own</button></div>
+  <div class="toolrow"><span class="tbrand"><b>CUT</b> &amp; SEW</span><button type="button" id="learnBtn">Learn</button><button type="button" id="measureBtn">Measure mine</button></div>
   <div class="grid">
     <div class="preview-col">
       <div class="stage" id="stage">
         <div id="svgHost"></div>
-        <div class="vbar">
-          <div class="vgroup" id="view"><button type="button" data-v="pieces" aria-pressed="true">PIECES</button><button type="button" data-v="pages" aria-pressed="false">PAGES</button><button type="button" data-v="flat" aria-pressed="false">FLAT</button></div>
-          <div class="vgroup"><button type="button" id="zOut" aria-label="Zoom out">&minus;</button><span id="zLbl">100%</span><button type="button" id="zIn" aria-label="Zoom in">+</button><button type="button" id="zFit">FIT</button></div>
+        <div class="vmenu">
+          <button type="button" class="vbtn" id="vBtn" aria-expanded="false" aria-controls="vDrop"><span id="vName">PIECES</span> <i>&#9660;</i></button>
+          <div class="vdrop" id="vDrop" hidden>
+            <div class="vlab">SHOW</div>
+            <div class="vgroup" id="view"><button type="button" data-v="pieces" aria-pressed="true">PIECES</button><button type="button" data-v="pages" aria-pressed="false">PAGES</button><button type="button" data-v="flat" aria-pressed="false">FLAT</button></div>
+            <div class="vlab">ZOOM</div>
+            <div class="vgroup"><button type="button" id="zOut" aria-label="Zoom out">&minus;</button><span id="zLbl">100%</span><button type="button" id="zIn" aria-label="Zoom in">+</button><button type="button" id="zFit">FIT</button></div>
+            <div class="vlab">KEY</div>
+            <p class="legend" id="legFlat" hidden><span>TECH FLAT, TRUE SCALE</span><span class="r">RED = HOW TO MEASURE</span><span>DASHES = STITCHING</span></p>
+            <p class="legend" id="legPat"><span>BLACK = CUT LINE</span><span class="r">RED DASH = SEW LINE</span><span class="b">BLUE = GRAIN</span><span>1 SQUARE = 1 INCH</span></p>
+          </div>
         </div>
       </div>
-      <p class="legend" id="legFlat" hidden><span>TECH FLAT, TRUE SCALE</span><span class="r">RED = HOW TO MEASURE</span><span>DASHES = STITCHING</span></p>
-      <p class="legend" id="legPat"><span>BLACK = CUT LINE</span><span class="r">RED DASH = SEW LINE</span><span class="b">BLUE = GRAIN</span><span>1 SQUARE = 1 INCH</span></p>
       <p class="sum" id="sum"></p>
       <p class="pieces" id="pieceList"></p>
       <ul class="checks" id="checks"></ul>
@@ -1180,9 +1214,12 @@
     if (paper === 'roll') { var L = pack(Math.max(pw, maxW + 0.6)); best = build(L, L.W, L.H); }
     else if (!P.home && fitsSheet) best = build(packSheets(pw, ph), pw, ph);
     else {
-      for (var k = Math.max(1, Math.ceil((maxW + 0.6) / pw)); k <= 8; k++) {
+      var packed = packTiles(result, parts, pw, ph);
+      best = build(packed, pw, ph);
+      // keep the old way as a safety net, use whichever prints on fewer pages
+      for (var k = Math.max(1, Math.ceil((maxW + 0.6) / pw)); k <= 6; k++) {
         var cand = build(pack(k * pw), pw, ph);
-        if (!best || cand.pages.length < best.pages.length || (cand.pages.length === best.pages.length && cand.cols * cand.rows < best.cols * best.rows)) best = cand;
+        if (cand.pages.length < best.pages.length || (cand.pages.length === best.pages.length && cand.cols * cand.rows < best.cols * best.rows)) best = cand;
       }
     }
     return best;
@@ -1201,6 +1238,78 @@
         pages.push({ r: r, c: c, x: rx, y: ry, used: used, id: String.fromCharCode(65 + r) + (c + 1) });
       }
       return { items: items, W: L.W, H: L.H, tw: tw, th: th, cols: cols, rows: rows, all: pages, pages: pages.filter(function (p) { return p.used; }) };
+    }
+  }
+  // ---- Page saver: place pieces so they touch as few printed pages as possible ----
+  // Tries many orders and both turns of every piece, counts the real pages each piece's cut line lands on, keeps the best.
+  var PACK_CACHE = {};
+  function packTiles(result, parts, tw, th) {
+    var key = tw + 'x' + th + '|' + parts.map(function (p) { return p.pc.name + ':' + p.w.toFixed(2) + 'x' + p.h.toFixed(2); }).join(',');
+    if (PACK_CACHE[key]) return reuse(PACK_CACHE[key]);
+    var gap = 0.45, step = 0.25;
+    // each part in both turns: size + sample points of its cut line (relative to its placed top left)
+    var P = parts.map(function (p) {
+      var cuts = p.items.filter(function (it) { return it.k === 'poly' && it.w === 'cut' && it.closed; }), b = p.b, out = [];
+      [false, true].forEach(function (rot) {
+        var f = rot ? function (q) { return [b[3] - q[1], q[0] - b[0]]; } : function (q) { return [q[0] - b[0], q[1] - b[1]]; };
+        var polys = cuts.map(function (c) { return c.pts.map(f); }), samples = [];
+        polys.forEach(function (pts) { for (var i = 0; i < pts.length; i++) { var a = pts[i], c2 = pts[(i + 1) % pts.length], n = Math.max(1, Math.ceil(dist(a, c2) / step)); for (var j = 0; j < n; j++) samples.push([a[0] + (c2[0] - a[0]) * j / n, a[1] + (c2[1] - a[1]) * j / n]); } });
+        out.push({ rot: rot, w: rot ? b[3] - b[1] : b[2] - b[0], h: rot ? b[2] - b[0] : b[3] - b[1], polys: polys, samples: samples });
+      });
+      return { part: p, v: out, area: (b[2] - b[0]) * (b[3] - b[1]) };
+    });
+    function tilesOf(v, x, y) {
+      var set = {}, minc = 1e9, maxc = -1, minr = 1e9, maxr = -1;
+      for (var i = 0; i < v.samples.length; i++) { var c = Math.floor((x + v.samples[i][0]) / tw), r = Math.floor((y + v.samples[i][1]) / th); set[c + ',' + r] = 1; if (c < minc) minc = c; if (c > maxc) maxc = c; if (r < minr) minr = r; if (r > maxr) maxr = r; }
+      for (var cc = minc; cc <= maxc; cc++) for (var rr = minr; rr <= maxr; rr++) { var k2 = cc + ',' + rr; if (set[k2]) continue; var ctr = [(cc + 0.5) * tw - x, (rr + 0.5) * th - y]; if (v.polys.some(function (pp) { return inPoly(ctr, pp); })) set[k2] = 1; }
+      return Object.keys(set);
+    }
+    function greedy(order, cols) {
+      var Wd = cols * tw, used = {}, nUsed = 0, rects = [], placed = [], maxY = 0;
+      for (var oi = 0; oi < order.length; oi++) {
+        var pp = order[oi], best = null;
+        for (var vi = 0; vi < 2; vi++) {
+          var v = pp.v[vi]; if (v.w > Wd - 0.2) continue;
+          var cand = [[0.2, 0.2]];
+          rects.forEach(function (r) { cand.push([r.x + r.w + gap, r.y], [r.x, r.y + r.h + gap], [r.x + r.w + gap, 0.2]); });
+          var rowsNow = Math.ceil((maxY + v.h) / th) + 1;
+          for (var c = 0; c < cols; c++) for (var r = 0; r <= rowsNow; r++) { cand.push([c * tw + 0.2, r * th + 0.2]); cand.push([c * tw + tw - v.w - 0.2, r * th + 0.2]); cand.push([c * tw + 0.2, r * th + th - v.h - 0.2]); }
+          for (var ci = 0; ci < cand.length; ci++) {
+            var x = cand[ci][0], y = cand[ci][1];
+            if (x < 0.1 || y < 0.1 || x + v.w > Wd - 0.1) continue;
+            var hit = false; for (var ri = 0; ri < rects.length; ri++) { var q = rects[ri]; if (x < q.x + q.w + gap - 1e-6 && x + v.w + gap > q.x + 1e-6 && y < q.y + q.h + gap - 1e-6 && y + v.h + gap > q.y + 1e-6) { hit = true; break; } }
+            if (hit) continue;
+            var ts = tilesOf(v, x, y), nw = 0; for (var t = 0; t < ts.length; t++) if (!used[ts[t]]) nw++;
+            var score = nw * 1e6 + (y + v.h) * 10 + x * 0.01;
+            if (!best || score < best.score) best = { score: score, x: x, y: y, v: v, ts: ts };
+          }
+        }
+        if (!best) return null;
+        best.ts.forEach(function (t) { if (!used[t]) { used[t] = 1; nUsed++; } });
+        rects.push({ x: best.x, y: best.y, w: best.v.w, h: best.v.h }); placed.push({ pp: pp, x: best.x, y: best.y, rot: best.v.rot }); maxY = Math.max(maxY, best.y + best.v.h);
+      }
+      var rows = Math.ceil(maxY / th), mc = 0; Object.keys(used).forEach(function (k3) { mc = Math.max(mc, +k3.split(',')[0] + 1); });
+      return { n: nUsed, cols: mc, rows: rows, H: maxY, placed: placed };
+    }
+    var minW = Math.max.apply(null, P.map(function (q) { return Math.min(q.v[0].w, q.v[1].w); })), k0 = Math.max(1, Math.ceil((minW + 0.5) / tw));
+    var base = P.slice().sort(function (a, b) { return b.area - a.area; }), best = null, t0 = performance.now(), seedR = 7;
+    function rnd() { seedR = (seedR * 1103515245 + 12345) & 0x7fffffff; return seedR / 0x7fffffff; }
+    function better(a, b) { return !b || a.n < b.n || (a.n === b.n && a.cols * a.rows < b.cols * b.rows) || (a.n === b.n && a.cols * a.rows === b.cols * b.rows && a.H < b.H); }
+    for (var cols = k0; cols <= k0 + 3; cols++) { var g = greedy(base, cols); if (g && better(g, best)) best = g; }
+    var tries = 0;
+    while (performance.now() - t0 < 220 && tries < 400) {
+      tries++; var order = base.slice(), sw = 1 + Math.floor(rnd() * 3);
+      for (var i = 0; i < sw; i++) { var a = Math.floor(rnd() * order.length), b2 = Math.floor(rnd() * order.length), tmp = order[a]; order[a] = order[b2]; order[b2] = tmp; }
+      var cols2 = best ? Math.max(k0, best.cols + Math.floor(rnd() * 3) - 1) : k0, g2 = greedy(order, cols2);
+      if (g2 && better(g2, best)) best = g2;
+    }
+    var outL = { placed: best.placed.map(function (q) { return { name: q.pp.part.pc.name, x: q.x, y: q.y, rot: q.rot }; }), W: Math.max(best.cols, 1) * tw, H: best.H + 0.3 };
+    PACK_CACHE[key] = outL;
+    return reuse(outL);
+    // turn the cached plan back into placements for these exact parts
+    function reuse(L) {
+      var byName = {}; parts.forEach(function (p) { byName[p.pc.name] = p; });
+      return { W: L.W, H: L.H, placed: L.placed.map(function (q) { var p = byName[q.name], pr = Object.assign({}, p, { rot: q.rot, w: q.rot ? p.b[3] - p.b[1] : p.b[2] - p.b[0], h: q.rot ? p.b[2] - p.b[0] : p.b[3] - p.b[1] }); return { p: pr, x: q.x, y: q.y }; }) };
     }
   }
   function polyTouchesRect(pts, rx, ry, w, h) {
@@ -1265,7 +1374,7 @@
     if (V.z <= 1.001) { cx = b[0] + b[2] / 2; cy = b[1] + b[3] / 2; }
     V.cx = cx; V.cy = cy;
     V.svg.setAttribute('viewBox', [cx - w / 2, cy - h / 2, w, h].join(' '));
-    $('zLbl').textContent = Math.round(V.z * 100) + '%';
+    $('zLbl').textContent = Math.round(V.z * 100) + '%'; if (window.__setViewName) window.__setViewName();
   }
   function zoomBy(k) { V.z = clamp(V.z * k, 1, 16); applyView(); }
   function unitsPerPx() { var host = $('svgHost'), b = V.base, w = b[2] / V.z, h = b[3] / V.z; return 1 / Math.min(host.clientWidth / w, host.clientHeight / h); }
@@ -2311,6 +2420,30 @@
     $('learnBtn').onclick = function () { open(); }; $('learnClose').onclick = function () { box.hidden = true; document.documentElement.classList.remove('focus-open'); };
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape') { if (!box.hidden) $('learnClose').onclick(); if (!$('pm').hidden) $('pm').hidden = true, document.documentElement.classList.remove('focus-open'); } });
     window.nocivLearn = open;
+  })();
+
+
+  // ---------- viewer dropdown + step icons ----------
+  (function () {
+    var btn = $('vBtn'), drop = $('vDrop');
+    function setOpen(o) { drop.hidden = !o; btn.setAttribute('aria-expanded', String(o)); }
+    btn.addEventListener('click', function (e) { e.stopPropagation(); setOpen(drop.hidden); });
+    drop.addEventListener('click', function (e) { e.stopPropagation(); if (e.target.closest('#view [data-v]')) setOpen(false); });
+    document.addEventListener('click', function () { setOpen(false); });
+    $('svgHost').addEventListener('pointerdown', function () { setOpen(false); });
+    window.__setViewName = function () { $('vName').textContent = { pieces: 'PIECES', pages: 'PAGES', flat: 'FLAT' }[state.view] + '  ' + $('zLbl').textContent; };
+    var ICON = {
+      What: '<path d="M12 4a2 2 0 012 2c0 1-1 1.6-2 2.2V10l8 5.5a1.5 1.5 0 01-.9 2.7H4.9a1.5 1.5 0 01-.9-2.7L12 10"/>',
+      Measure: '<rect x="3" y="8" width="18" height="8" rx="1"/><path d="M7 8v3M11 8v4M15 8v3M19 8v2"/>',
+      Fit: '<path d="M8 4l-5 3 2 4 2-1v10h10V10l2 1 2-4-5-3c-1 1.5-2.2 2-4 2s-3-.5-4-2z"/>',
+      'Tech pack': '<rect x="5" y="4" width="14" height="17" rx="1"/><path d="M9 4V3h6v1M8 10h8M8 14h8M8 18h5"/>',
+      Save: '<path d="M12 4v11M7 10l5 5 5-5M5 20h14"/>',
+      Sew: '<path d="M5 19L19 5"/><circle cx="17.5" cy="6.5" r="1.2"/><path d="M5 19c3 1 4-2 7-1s4 2 7 0" stroke-dasharray="2 2"/>'
+    };
+    document.querySelectorAll('nav.steps button').forEach(function (b) {
+      var nm = b.textContent.replace(/^\d+/, ''); if (!ICON[nm]) return;
+      b.insertAdjacentHTML('afterbegin', '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + ICON[nm] + '</svg>');
+    });
   })();
 
   // Exposed for testing only.
