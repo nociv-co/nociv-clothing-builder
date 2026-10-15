@@ -1004,12 +1004,19 @@
   // =====================================================================
   // TOPS
   // =====================================================================
+  // 16L = 10 mm is the standard shirt button size (1 ligne = 0.635 mm).
+  var BTN_L = 16, BTN_MM = 10;
+  function topNeck(o) { var n = o.neck || 'crew'; if (o.cut === 'tank' || o.cut === 'muscle') return n === 'vneck' ? 'vneck' : 'crew'; return n; }
+  var NECK_NAMES = { crew: 'Crew neck', vneck: 'V neck', polo: 'Polo collar', henley: 'Henley placket', mock: 'Mock neck' };
   function draftTop(m, o) {
     var cut = o.cut, ease = { fitted: 2, regular: 4, relaxed: 7, oversized: 10 }[o.fit] + (cut === 'boxy' ? 4 : 0);
     var C = m.chest + ease, hc = C / 4;
     var ad = m.chest / 8 + 4.5 + (cut === 'boxy' ? 1.5 : cut === 'tank' ? 1.5 : cut === 'muscle' ? 3 : 0);
     var nw = m.chest / 16 + 0.9 + (cut === 'tank' ? 0.75 : 0);
-    var fnd = cut === 'tank' ? 5.5 : 3.0, bnd = cut === 'tank' ? 2.25 : 0.75;
+    var ns = topNeck(o), plk = ns === 'polo' || ns === 'henley';
+    var fnd = cut === 'tank' ? (ns === 'vneck' ? 7.5 : 5.5) : ns === 'vneck' ? 5.5 : ns === 'polo' ? 2.75 : ns === 'mock' ? 2.0 : 3.0;
+    var bnd = cut === 'tank' ? 2.25 : ns === 'mock' ? 0.5 : 0.75;
+    var plen0 = o.btn === 2 ? 5 : 6.5, btnAt = o.btn === 2 ? [0.75, 2.75] : [0.75, 2.75, 4.75];
     var shHalf = m.shoulder / 2, drop = cut === 'boxy' ? 1.0 : 1.5;
     var sw = cut === 'tank' ? nw + 2.0 : cut === 'muscle' ? shHalf - 0.5 : shHalf + (cut === 'boxy' ? 2.25 : 0);
     sw = Math.min(sw, hc - 0.25);
@@ -1022,7 +1029,10 @@
       var k = isFront ? 0.4 : 0.2;
       return cub([sw, dY], [sw - k, dY + (ad - dY) * (isFront ? 0.5 : 0.45)], [sw - k + (hc - sw + k) * (isFront ? 0.3 : 0.4), ad], [hc, ad]);
     }
-    function neck(depth, isFront) { return isFront ? cub([0, depth], [nw * 0.45, depth], [nw - 0.05, depth * 0.5], [nw, 0]) : cub([0, depth], [nw * 0.5, depth], [nw - 0.1, depth * 0.7], [nw, 0]); }
+    function neck(depth, isFront) {
+      if (isFront && ns === 'vneck') return cub([0, depth], [nw * 0.38, depth * 0.62], [nw * 0.82, depth * 0.2], [nw, 0]);
+      return isFront ? cub([0, depth], [nw * 0.45, depth], [nw - 0.05, depth * 0.5], [nw, 0]) : cub([0, depth], [nw * 0.5, depth], [nw - 0.1, depth * 0.7], [nw, 0]);
+    }
     var curves = {};
     ['FRONT', 'BACK'].forEach(function (nm) {
       var isF = nm === 'FRONT', nk = neck(isF ? fnd : bnd, isF), ar = arm(isF);
@@ -1032,6 +1042,8 @@
       p.mark({ t: 'notch', p: [hc, ad] });
       p.mark({ t: 'label', x: hc * 0.55, y: ad + 2, info: 'Chest ' + fmt(m.chest) + ', shoulder ' + fmt(m.shoulder) + ', length ' + fmt(m.length) });
       p.mark({ t: 'grain', a: [hc * 0.55, ad + 4.5], b: [hc * 0.55, L - 1.5] });
+      if (isF && plk) { p.mark({ t: 'line', a: [0.01, fnd], b: [0.01, fnd + plen0], dash: 0 }); p.mark({ t: 'text', x: 0.25, y: fnd + plen0 + 0.45, s: 0.18, str: 'cut the placket slit on the fold line, ' + frac(plen0) + ' in down', anchor: 'start' }); }
+      if (isF && o.cpock) { var px0 = Math.min(hc - 5.25, 2.25), py0 = Math.max(fnd + 2, ad - 1.5); p.mark({ t: 'poly', pts: [[px0, py0], [px0 + 4.5, py0], [px0 + 4.5, py0 + 5], [px0, py0 + 5]], closed: 1, dash: 1 }); p.mark({ t: 'text', x: px0 + 2.25, y: py0 + 2.6, s: 0.18, str: 'pocket goes here on the LEFT chest', anchor: 'middle' }); }
       pieces.push(p);
     });
     var armAvg = (curves.FRONT.arm + curves.BACK.arm) / 2, neckLen = 2 * (curves.FRONT.neck + curves.BACK.neck);
@@ -1050,19 +1062,34 @@
     if (cut === 'tank') {
       pieces.push(rectPiece('NECK BINDING', 'Cut 1', 1, neckLen * 0.85, 1.5, [0, 0, 0, 0]));
       pieces.push(rectPiece('ARMHOLE BINDING', 'Cut 2', 2, armAvg * 2 * 0.88, 1.5, [0, 0, 0, 0]));
+    } else if (ns === 'polo') {
+      // Self fabric collar, folded. Ends at the outer edges of the 1 in placket, so it is 1 in shorter than the neckline.
+      var cl = neckLen - 1, col = rectPiece('COLLAR', 'Cut 1, interface half', 1, cl, 2.75 * 2, [0.375, 0.375, 0.375, 0.375]);
+      col.mark({ t: 'line', a: [0, 2.75], b: [cl, 2.75], dash: 2 }); col.mark({ t: 'text', x: cl / 2, y: 2.75 - 0.25, s: 0.18, str: 'fold line', anchor: 'middle' });
+      pieces.push(col);
     } else {
-      var nb = rectPiece('NECKBAND', 'Cut 1', 1, neckLen * 0.85, 2.25, [0.375, 0.375, 0.375, 0.375]);
-      nb.mark({ t: 'line', a: [0, 1.125], b: [neckLen * 0.85, 1.125], dash: 2 });
+      var bandH = ns === 'mock' ? 1.75 : 1.125, bandL = (neckLen - (ns === 'henley' ? 1 : 0)) * (ns === 'mock' ? 0.9 : 0.85);
+      var nb = rectPiece(ns === 'mock' ? 'MOCK NECK BAND' : 'NECKBAND', 'Cut 1', 1, bandL, bandH * 2, [0.375, 0.375, 0.375, 0.375]);
+      nb.mark({ t: 'line', a: [0, bandH], b: [bandL, bandH], dash: 2 });
       pieces.push(nb);
       if (cut === 'muscle') pieces.push(rectPiece('ARMHOLE BINDING', 'Cut 2', 2, armAvg * 2 * 0.88, 1.5, [0, 0, 0, 0]));
     }
+    if (plk) {
+      // 3 in strip folded = 1 1/2 in. Sewn 1/2 in from the center line on each side, it finishes 1 in wide.
+      var pk = rectPiece('PLACKET', 'Cut 2, interfaced', 2, 3, plen0 + 1.5, [0, 0, 0, 0]);
+      pk.mark({ t: 'line', a: [1.5, 0], b: [1.5, plen0 + 1.5], dash: 2 });
+      pieces.push(pk);
+    }
+    if (o.cpock) pieces.push(rectPiece('POCKET', 'Cut 1', 1, 4.5, 5, [1, 0.375, 0.375, 0.375]));
     checks.unshift(['Front and back side seams match (' + fmt(L - ad) + ')', true]);
     checks.unshift(['Chest on the pattern is ' + fmt(C) + ' (yours plus ' + fmt(ease) + ' to move)', true]);
     notes.push('Use stretchy knit fabric (jersey). Seam allowance is included: 3/8 in at the neck and armholes, 1/2 in on shoulders and sides, 1 in at hems.');
     if (bound) notes.push('Bindings: cut across the stretch of the fabric, so they pull longways.');
+    if (plk) notes.push('Placket: fuse lightweight knit interfacing to both placket strips. Buttons: ' + o.btn + ' at ' + BTN_L + 'L (' + BTN_MM + ' mm), the common shirt button size.');
     var spec = { fam: 'tops', cut: cut, L: L, hc: hc, ad: ad, nw: nw, fnd: fnd, bnd: bnd, sw: sw, dY: dY, bound: bound,
       length: L, chest: 2 * hc, sweep: 2 * hc, across: 2 * sw, shoulder: dist([nw, 0], [sw, dY]), armStraight: dist([sw, dY], [hc, ad]),
-      armCurve: curves.FRONT.arm + curves.BACK.arm, neckW: 2 * nw, neckLen: neckLen, hem: 1, band: cut === 'tank' ? 0 : 1.125 };
+      armCurve: curves.FRONT.arm + curves.BACK.arm, neckW: 2 * nw, neckLen: neckLen, hem: 1, band: cut === 'tank' || ns === 'polo' ? 0 : ns === 'mock' ? 1.75 : 1.125,
+      neck: ns, placket: plk ? plen0 : 0, placketW: 1, btnAt: plk ? btnAt : [], btn: plk ? o.btn : 0, collarH: ns === 'polo' ? 2.75 : 0, cpock: !!o.cpock };
     if (!bound) { spec.sleeveLen = ch + sl; spec.sleeveOpen = hw; spec.bicep = bw + (hw - bw) / sl; spec.capH = ch; }
     return { pieces: pieces, checks: checks, notes: notes, spec: spec };
   }
@@ -1094,14 +1121,98 @@
     return { pieces: pieces, checks: [['Bag body is ' + fmt(W) + ' wide at the top', true]], notes: ['Use sturdy woven fabric (canvas, denim, duck). Seam allowance 1/2 in is included, 1 1/2 in at the top hem.'], spec: spec };
   }
 
+
+  // ---------- shared shapes for hats and bags ----------
+  function arcPts(cx, cy, r, a0, a1, n) { var p = []; for (var i = 0; i <= n; i++) { var a = a0 + (a1 - a0) * i / n; p.push([cx + r * Math.cos(a), cy + r * Math.sin(a)]); } return p; }
+  function circlePiece(name, cut, count, r, sa) {
+    var p = new Piece(name, cut, count);
+    for (var q = 0; q < 4; q++) p.edge(arcPts(r, r, r, q * Math.PI / 2, (q + 1) * Math.PI / 2, 10), sa);
+    p.mark({ t: 'grain', a: [r, r * 0.45], b: [r, r * 1.55] });
+    [0, 1, 2, 3].forEach(function (q) { var a = q * Math.PI / 2; p.mark({ t: 'notch', p: [r + r * Math.cos(a), r + r * Math.sin(a)] }); });
+    return p;
+  }
+  // Rounded rectangle, corners of radius rr, starting top left going clockwise.
+  function roundRectPiece(name, cut, count, w, h, rr, sa) {
+    var p = new Piece(name, cut, count), H2 = Math.PI / 2;
+    p.edge(lin([rr, 0], [w - rr, 0]), sa).edge(arcPts(w - rr, rr, rr, -H2, 0, 8), sa).edge(lin([w, rr], [w, h - rr]), sa).edge(arcPts(w - rr, h - rr, rr, 0, H2, 8), sa)
+      .edge(lin([w - rr, h], [rr, h]), sa).edge(arcPts(rr, h - rr, rr, H2, Math.PI, 8), sa).edge(lin([0, h - rr], [0, rr]), sa).edge(arcPts(rr, rr, rr, Math.PI, 3 * H2, 8), sa);
+    p.mark({ t: 'grain', a: [w / 2, h * 0.2], b: [w / 2, h * 0.8] });
+    return p;
+  }
+
+  // =====================================================================
+  // CADET HAT: flat round crown, straight band, curved brim
+  // Sizing from Tally's Treasury cadet cap method: crown circle = (head + ease) / pi.
+  // =====================================================================
+  function draftCadet(m, o) {
+    var C = m.head + 1, d = C / Math.PI, r = d / 2, bandH = 3, span = C * 0.42, proj = 2.5, endP = 0.5;
+    var crown = circlePiece('CROWN TOP', 'Cut 2 (outer + lining), 1 interfacing', 2, r, 0.375);
+    crown.mark({ t: 'label', x: r, y: r, info: 'Head ' + fmt(m.head), small: 1 });
+    var band = rectPiece('BAND', 'Cut 2 (outer + lining), 1 interfacing', 2, C, bandH, [0.375, 0.375, 0.375, 0.375]);
+    [0.25, 0.5, 0.75].forEach(function (k) { band.mark({ t: 'notch', p: [C * k, 0] }); });
+    band.mark({ t: 'text', x: C / 2, y: bandH - 0.35, s: 0.16, str: 'ends join at the center back. Middle notch = center front', anchor: 'middle' });
+    // Brim: the inner edge is an arc of the band circle so it sits flat around the front of the hat.
+    var th = span / r, inner = [], outer = [];
+    for (var i = 0; i <= 16; i++) { var a = -th / 2 + th * i / 16, pj = endP + (proj - endP) * Math.cos(Math.PI * (a / th)); inner.push([r * Math.sin(a), r * Math.cos(a)]); outer.push([(r + pj) * Math.sin(a), (r + pj) * Math.cos(a)]); }
+    var brim = new Piece('BRIM', 'Cut 2 + 1 brim stiffener', 2);
+    brim.edge(inner, 0.375).edge(lin(inner[16], outer[16]), 0.375).edge(RV(outer), 0.375).edge(lin(outer[0], inner[0]), 0.375);
+    brim.mark({ t: 'grain', a: [-r * 0.35, r + 1.2], b: [r * 0.35, r + 1.2] }).mark({ t: 'notch', p: inner[8] });
+    var spec = { fam: 'hats', kind: 'cadet', circ: C, crownD: d, bandH: bandH, brim: proj, brimSpan: span, flat: d, crown: bandH, cuff: 0 };
+    return { pieces: [crown, band, brim], checks: [['Fits a ' + fmt(m.head) + ' head with ' + fmt(1) + ' of ease (' + fmt(C) + ' around)', true], ['Brim covers the front ' + fmt(span) + ' of the band', true]],
+      notes: ['Use a medium weight woven (twill, canvas, corduroy, denim, wool). Seam allowance 3/8 in is included.', 'Brim stiffener: a plastic hat brim insert or 2 layers of heavy fusible, cut on the sewing line (no seam allowance).'], spec: spec };
+  }
+
+  // =====================================================================
+  // FANNY PACK: front + back panel, zip panel on top, gusset around the bottom, 1 in webbing belt
+  // =====================================================================
+  function draftFanny(m, o) {
+    var W = m.width, H = m.height, D = Math.max(1, m.depth), rr = Math.min(2, H * 0.35), sa = 0.5;
+    var top = (W - 2 * rr) + Math.PI * rr, per = 2 * (W - 2 * rr) + 2 * (H - 2 * rr) + 2 * Math.PI * rr, gus = per - top;
+    var zip = Math.ceil(top + 2);
+    var panel = roundRectPiece('FRONT + BACK', 'Cut 2 (+ 2 lining)', 2, W, H, rr, sa);
+    panel.mark({ t: 'label', x: W / 2, y: H * 0.55, info: fmt(W) + ' wide, ' + fmt(H) + ' tall, ' + fmt(D) + ' deep', small: 1 });
+    var zp = rectPiece('ZIP PANEL', 'Cut 2', 2, top, D / 2, [sa, sa, sa, sa]);
+    zp.mark({ t: 'text', x: top / 2, y: D / 4 + 0.08, s: 0.16, str: 'zipper side', anchor: 'middle' });
+    var gu = rectPiece('GUSSET', 'Cut 1', 1, gus, D, [sa, sa, sa, sa]);
+    gu.mark({ t: 'notch', p: [gus / 2, 0] });
+    var longStrap = Math.round((m.strap - W + 8) * 2) / 2;
+    var spec = { fam: 'bags', kind: 'fanny', width: W, height: H, depth: D, strap: m.strap, strapW: 1, zipper: zip, longStrap: longStrap, shortStrap: 6, tabs: 4, topLen: top, gusLen: gus };
+    return { pieces: [panel, zp, gu], checks: [['Zip panel and gusset add up to the panel edge (' + fmt(per) + ')', Math.abs(top + gus - per) < 0.01], ['Belt fits ' + fmt(m.strap) + ' around', true]],
+      notes: ['Use a sturdy woven (canvas, cordura, denim, ripstop). Seam allowance 1/2 in is included.', 'Hardware: a ' + zip + ' in zipper (coil, size #5), 1 in webbing (' + fmt(longStrap + 6 + 8) + ' total), one 1 in side release buckle, one 1 in slider.'], spec: spec };
+  }
+
+  // =====================================================================
+  // BACKPACK: tube bag with a flap, drawstring top, 1 or 2 straps. Regular or wide camper.
+  // =====================================================================
+  function draftBackpack(m, o) {
+    var d = m.width, H = m.height, C = Math.PI * d, sa = 0.5, casing = 1.5;
+    var base = circlePiece('BASE', 'Cut 2 (outer + lining), 1 stiff interfacing', 2, d / 2, sa);
+    base.mark({ t: 'label', x: d / 2, y: d / 2, info: fmt(d) + ' across', small: 1 });
+    var body = rectPiece('BODY', 'Cut 1 (+ 1 lining)', 1, C, H, [sa + casing, sa, sa, sa]);
+    [0.25, 0.5, 0.75].forEach(function (k) { body.mark({ t: 'notch', p: [C * k, H] }); });
+    body.mark({ t: 'line', a: [0, 0], b: [C, 0], dash: 2 });
+    body.mark({ t: 'text', x: C / 2, y: 0.6, s: 0.18, str: 'top: fold 1/2 in, then 1 1/2 in for the drawstring casing. Seam is the center back', anchor: 'middle' });
+    body.mark({ t: 'label', x: C / 2, y: H * 0.5, info: fmt(d) + ' across, ' + fmt(H) + ' tall' });
+    var fw = Math.round(d * 0.95 * 4) / 4, fl = Math.round((d * 0.6 + 5) * 4) / 4;
+    var flap = roundRectPiece('FLAP', 'Cut 2, 1 interfacing', 2, fw, fl, Math.min(fw * 0.3, 3), sa);
+    var straps = o.straps === 1 ? 1 : 2, sl = m.strap;
+    var st = rectPiece('STRAP', straps === 1 ? 'Cut 1' : 'Cut 2', straps, 5, sl, [0, 0, 0, 0]);
+    [1.25, 2.5, 3.75].forEach(function (x) { st.mark({ t: 'line', a: [x, 0], b: [x, sl], dash: 2 }); });
+    var tab = rectPiece('STRAP TAB', straps === 1 ? 'Cut 1' : 'Cut 2', straps, 5, 4, [0, 0, 0, 0]);
+    var cord = Math.round(C + 24);
+    var spec = { fam: 'bags', kind: 'backpack', width: d, diameter: d, height: H, circ: C, flapW: fw, flapL: fl, strap: sl, strapW: 1.25, straps: straps, cord: cord, style: o.pack === 'camper' ? 'camper' : 'reg', depth: 0 };
+    return { pieces: [body, base, flap, st, tab], checks: [['Body wraps the base exactly (' + fmt(C) + ' around)', true], [straps === 1 ? 'One strap, worn across the body' : 'Two shoulder straps', true]],
+      notes: ['Use a sturdy woven (canvas, waxed canvas, cordura, denim). Seam allowance 1/2 in is included, 2 in at the top for the casing.', 'Drawstring: ' + cord + ' in of cord and 2 buttonholes or grommets at the center front casing.'], spec: spec };
+  }
+
   // =====================================================================
   // GARMENTS, MEASUREMENTS, STEPS
   // =====================================================================
   var GROUPS = [
     { id: 'pants', name: 'Pants', items: [['straight', 'Straight'], ['wide', 'Wide leg'], ['xwide', 'Extra wide'], ['carpenter', 'Carpenter'], ['army', 'Army fatigue']] },
     { id: 'tops', name: 'Tops', items: [['tee', 'Tee'], ['boxy', 'Boxy tee'], ['crop', 'Cropped tee'], ['tank', 'Tank'], ['muscle', 'Muscle tee']] },
-    { id: 'hats', name: 'Hats', items: [['beanie', 'Beanie'], ['cadet', 'Cadet hat', 1]] },
-    { id: 'bags', name: 'Bags', items: [['tote', 'Tote'], ['minitote', 'Mini tote'], ['fanny', 'Fanny pack', 1], ['backpack', 'Backpack', 1]] }
+    { id: 'hats', name: 'Hats', items: [['beanie', 'Beanie'], ['cadet', 'Cadet hat']] },
+    { id: 'bags', name: 'Bags', items: [['tote', 'Tote'], ['minitote', 'Mini tote'], ['fanny', 'Fanny pack'], ['backpack', 'Backpack']] }
   ];
   var FIELDS = {
     pants: [['waist', 'Waist', 'Around where you want the waistband to sit. Snug, not tight.', 20, 60],
@@ -1115,6 +1226,14 @@
     bags: [['width', 'Width at the top', 'How wide the bag opening is.', 4, 30], ['height', 'Height', 'From the bottom to the top edge.', 4, 30],
            ['depth', 'Depth', 'How thick the bottom is. 0 makes a flat bag.', 0, 12], ['strap', 'Strap length', 'Each strap, end to end. 24 in sits on the shoulder.', 8, 60]]
   };
+  // Some items ask for different numbers than the rest of their family.
+  var FIELDS_G = {
+    fanny: [['width', 'Width', 'Side to side across the front. 12 in is a classic size.', 7, 20], ['height', 'Height', 'Top to bottom. 6 in is classic.', 3, 12],
+            ['depth', 'Depth', 'How thick it is. 2 1/2 in is classic.', 1, 6], ['strap', 'Around you', 'Around your waist or hips where it sits, or across your body from hip to shoulder if you wear it crossbody.', 20, 70]],
+    backpack: [['width', 'Across the bottom', 'The bottom is a circle. Regular is 10 in, wide camper style is 13 in.', 6, 18], ['height', 'Height', 'From the bottom to the top edge. 16 in fits a laptop.', 8, 26],
+               ['strap', 'Strap length', 'Each strap, end to end. 30 in for two straps, 48 in for one strap across your body.', 16, 60]]
+  };
+  function fieldsFor(g) { return FIELDS_G[g] || FIELDS[famOf(g)]; }
   var SIZES = {
     pants: { XS: [26, 34, 9.5, 30], S: [28, 36, 10, 30.5], M: [31, 39, 10.5, 31], L: [34, 42, 11, 31.5], XL: [37, 45, 11.5, 32], '2XL': [40, 48, 12, 32], '3XL': [44, 52, 12.5, 32] },
     tops: { XS: [34, 15.5, 26], S: [37, 16.5, 27], M: [40, 17.5, 28], L: [44, 18.5, 29], XL: [48, 19.5, 30], '2XL': [52, 20.5, 31], '3XL': [56, 21, 31.5] },
@@ -1141,11 +1260,24 @@
     },
     tops: function (o) {
       var s = ['Print page 1 and check the test square. Then print, trim and tape the pages together.',
-        'Cut the paper pieces on the solid line. For pieces that say "on the fold", fold your fabric and put the fold edge of the paper right on the fabric fold.',
-        'Sew the front to the back at the shoulders.'];
+        'Cut the paper pieces on the solid line. For pieces that say "on the fold", fold your fabric and put the fold edge of the paper right on the fabric fold.'];
+      var nk = topNeck(o), pl = nk === 'polo' || nk === 'henley', plen = o.btn === 2 ? 5 : 6.5;
+      if (o.cpock) s.push('Chest pocket: fold the top edge under 1/4 in, then 3/4 in, and stitch. Press the other edges under 3/8 in. Sew it onto the left chest where the dotted box is, close to the edge.');
+      if (pl) {
+        s.push('Placket slit: mark the line down the center front, ' + frac(plen) + ' in from the neck edge (it is marked on the pattern).');
+        s.push('Placket strips: fuse interfacing on both. Fold each in half the long way, wrong sides together, and press. Lay one on each side of the line on the right side of the shirt, raw edges on the line, and stitch each one 1/2 in from the line, down to the bottom mark.');
+        s.push('Cut the slit down the line to 1/2 in above the bottom of the stitching, then snip diagonally into each bottom corner, right up to the last stitch (not through it). Push both strips through to the inside so they fill the opening, one over the other: left over right for menswear, right over left for womenswear.');
+        s.push('Pull the little triangle at the bottom up over the strip ends on the inside and stitch straight across through all of it, then topstitch a box across the bottom of the placket from the outside.');
+      }
+      s.push('Sew the front to the back at the shoulders.');
+      if (nk === 'polo') s.push('Collar: fuse interfacing on one half. Fold it in half the long way, right sides together, sew both short ends, turn it right side out and press. Pin the raw edges to the neckline from one outer edge of the placket to the other, centers matched, and sew. Cover the seam at the back neck with twill tape from shoulder to shoulder and topstitch it down.');
+      if (nk === 'vneck') s.push('V neckband: fold it in half the long way. Starting at the point of the V, stretch it gently around the neckline and sew it on, ending back at the point. Sew the two band ends together at the V on an angle straight down the center, trim and press. That makes a clean mitered V.');
+      if (nk === 'mock') s.push('Mock neck: sew the short ends of the band into a loop, fold it in half the long way, stretch it to fit the neckline and sew it on. It stands up instead of folding down.');
+      if (nk === 'henley') s.push('Neckband: fold it in half the long way, sew it to the neckline from one outer edge of the placket to the other, stretching it slightly. Tuck the band ends in at the placket and topstitch.');
+      if (pl) s.push('Buttons: make ' + o.btn + ' buttonholes on the top strip, 5/8 in long for ' + BTN_L + 'L (' + BTN_MM + ' mm) buttons. The top one is 3/4 in below the neck seam, then one every 2 in. Sew the buttons on the under strip right behind them.');
       if (o.cut === 'tank') s.push('Bindings: fold each strip in half the long way. Stretch it gently and sew it to the raw neck and armhole edges, then press it to the inside and topstitch.');
       else {
-        s.push('Neckband: sew the short ends together into a loop, fold it in half the long way, stretch it to fit the neckline and sew it on.');
+        if (nk === 'crew') s.push('Neckband: sew the short ends together into a loop, fold it in half the long way, stretch it to fit the neckline and sew it on.');
         if (o.cut === 'muscle') s.push('Armholes: sew on the bindings the same way as the neckband.');
         else s.push('Sleeves: match the top of each sleeve to the shoulder seam and sew it into the armhole while the shirt is still flat.');
       }
@@ -1154,12 +1286,35 @@
       return s;
     },
     hats: function (o) {
+      if (o.cut === 'cadet') return ['Print page 1, check the test square, print the rest, and tape the pages together.',
+        'Cut the outer and lining pieces. Fuse interfacing to the outer crown and the outer band. Cut the brim stiffener on the sewing line (no seam allowance).',
+        'Band: sew the short ends of each band (outer and lining) into a loop. That seam is the center back.',
+        'Crown: pin the outer band to the outer crown top, matching the 4 crown notches to the center back seam, the center front notch and the two side notches. Sew all the way around and clip the curve. Do the same with the lining.',
+        'Brim: sew the two brim pieces together around the outer curve, trim, clip, turn and press. Slide the stiffener in. Topstitch rows about 1/4 in apart, following the curve.',
+        'Baste the brim to the bottom edge of the outer band, brim notch on the band\'s center front notch.',
+        'Put the lining over the outer hat, right sides together, and sew around the bottom edge with the brim sandwiched between, leaving 3 in open at the back. Turn it through the gap, press, close the gap by hand and topstitch the bottom edge of the band.'];
       var s = ['Print page 1, check the test square, print the rest.', 'Cut 6 panels with the stretch going around your head.', 'Sew the panels together in pairs, then sew the pairs into two halves of 3, then sew the halves together across the top.'];
       if (o.cuff) s.push('Cuff: sew the short ends into a loop, fold it in half the long way, and sew it around the bottom edge, stretching it a little.');
       else s.push('Bottom: fold the edge up 3/8 in and stitch with a stretch stitch.');
       return s;
     },
     bags: function (o) {
+      if (o.cut === 'fanny') return ['Print page 1, check the test square, print the rest.',
+        'Cut 2 panels (front and back), 2 zip panels and 1 gusset. Cut the same panels from lining if you want it lined.',
+        'Zipper: sew one zip panel to each side of the zipper tape, right sides together, press the panels away from the teeth and topstitch.',
+        'Sew each end of the zip panel to an end of the gusset, making one loop. Open the zipper halfway now.',
+        'Webbing: thread the short 6 in piece through one half of the buckle, fold it in half and baste it to one end of the gusset at the middle. Thread the long piece through the slider, then the other half of the buckle, then back through the slider, and baste its end to the other side.',
+        'Pin the loop all the way around the front panel, right sides together, zipper centered on the top, and sew. Clip the curves. Do the same with the back panel.',
+        'Finish the inside seams with overlock, zigzag or bias binding (or sew the lining the same way and stitch it to the zipper tape by hand). Turn it right side out through the zipper.'];
+      if (o.cut === 'backpack') return ['Print page 1, check the test square, print the rest, tape them together.',
+        'Cut the body, base, flap, strap' + (o.straps === 1 ? '' : 's') + ' and tab' + (o.straps === 1 ? '' : 's') + '. Fuse interfacing to one flap piece and to one base piece.',
+        'Strap' + (o.straps === 1 ? '' : 's') + ' and tab' + (o.straps === 1 ? '' : 's') + ': fold in quarters the long way on the dotted lines and topstitch both edges. Loop each tab in half (add a D ring or slider if you want it adjustable).',
+        'Drawstring holes: make 2 buttonholes, or set 2 grommets, 1 in apart at the center front of the body, 1 in below the top fold line.',
+        'Flap: sew the two flap pieces together around the sides and rounded bottom, leave the top open, trim, turn, press and topstitch.',
+        'Body: sew the two short ends together into a tube. That seam is the center back.',
+        'Base: pin the base into the bottom of the tube, matching the 4 notches, with the tab' + (o.straps === 1 ? ' at one side' : 's 3 in either side of the center back') + ' tucked in, and sew. Clip the curve.',
+        'Top: baste the flap and the strap end' + (o.straps === 1 ? ' (on the side opposite the tab)' : 's') + ' to the center back, 1 in below the fold line, pointing down. Fold the top edge down 1/2 in, then 1 1/2 in, and stitch the casing. Flip the flap up and over the top and stitch across it once more.',
+        'Thread the cord through the casing with a safety pin, out both holes, and knot the ends.'];
       var s = ['Print page 1, check the test square, print the rest.', 'Cut 2 bag bodies and 2 straps.' + (o.tpock ? ' Hem the top of the inside pocket and sew it onto one body piece.' : ''),
         'Sew the two bodies together down the sides and across the bottom. Leave the little cut out corners open.',
         'Boxed corners: pinch each cut out corner flat so the side seam sits on the bottom seam, and sew straight across.',
@@ -1173,29 +1328,45 @@
   // STATE
   // =====================================================================
   var state = {
-    g: 'wide', units: 'in', view: 'pieces', fit: 'relaxed', paper: 'letter',
-    o: { waist: 'fly', fpock: true, bpock: true, dknee: false, cuff: true, tpock: false },
+    g: 'wide', units: 'in', view: 'pages', fit: 'relaxed', paper: 'letter',
+    o: { waist: 'fly', fpock: true, bpock: true, dknee: false, cuff: true, tpock: false, neck: 'crew', btn: 3, cpock: false, pack: 'reg', straps: 2 },
     m: { waist: 31, seat: 39, rise: 10.5, inseam: 31, chest: 40, shoulder: 17.5, length: 28, head: 22, width: 14, height: 15, depth: 4, strap: 24 }
   };
   try {
     var saved = JSON.parse(localStorage.getItem('nocivCutSew') || 'null');
     if (saved && saved.m) {
       Object.assign(state.m, saved.m);
-      ['units', 'g', 'fit', 'paper', 'view'].forEach(function (k) { if (saved[k]) state[k] = saved[k]; });
+      ['units', 'g', 'fit', 'paper'].forEach(function (k) { if (saved[k]) state[k] = saved[k]; });
+      if (saved.v2 && saved.view) state.view = saved.view; // Pages is the default now (Oct 14), older saved views reset once
       if (saved.o) Object.assign(state.o, saved.o);
     }
   } catch (e) {}
-  function save() { try { localStorage.setItem('nocivCutSew', JSON.stringify({ m: state.m, units: state.units, g: state.g, fit: state.fit, paper: state.paper, view: state.view, o: state.o })); } catch (e) {} }
+  function save() { try { localStorage.setItem('nocivCutSew', JSON.stringify({ v2: 1, m: state.m, units: state.units, g: state.g, fit: state.fit, paper: state.paper, view: state.view, o: state.o })); } catch (e) {} }
   function famOf(g) { for (var i = 0; i < GROUPS.length; i++) for (var j = 0; j < GROUPS[i].items.length; j++) if (GROUPS[i].items[j][0] === g) return GROUPS[i].id; return 'pants'; }
-  function nameOf(g) { for (var i = 0; i < GROUPS.length; i++) for (var j = 0; j < GROUPS[i].items.length; j++) if (GROUPS[i].items[j][0] === g) return GROUPS[i].items[j][1]; return g; }
+  function baseName(g) { for (var i = 0; i < GROUPS.length; i++) for (var j = 0; j < GROUPS[i].items.length; j++) if (GROUPS[i].items[j][0] === g) return GROUPS[i].items[j][1]; return g; }
+  // The name follows the neck pick on tops: a tee with a polo collar is a polo.
+  function nameOf(g) {
+    var n = baseName(g);
+    if (g === state.g && famOf(g) === 'tops' && g !== 'tank' && g !== 'muscle') {
+      var k = state.o.neck;
+      if (k === 'polo') return g === 'boxy' ? 'Boxy polo' : g === 'crop' ? 'Cropped polo' : 'Polo shirt';
+      if (k === 'henley') return n.replace(/tee/i, 'henley').replace(/^Tee$/, 'Henley');
+      if (k === 'vneck') return 'V neck ' + n.toLowerCase();
+      if (k === 'mock') return 'Mock neck ' + n.toLowerCase();
+    }
+    if (g === state.g && (g === 'tank' || g === 'muscle') && state.o.neck === 'vneck') return 'V neck ' + n.toLowerCase();
+    return n;
+  }
   function fmt(inches) { if (state.units === 'cm') return (Math.round(inches * 2.54 * 10) / 10) + ' cm'; return (Math.round(inches * 100) / 100) + ' in'; }
 
   function draft() {
     var fam = famOf(state.g), m = {}, o = Object.assign({ cut: state.g, fit: state.fit }, state.o);
-    FIELDS[fam].forEach(function (f) { m[f[0]] = clamp(state.m[f[0]], f[3], f[4]); });
+    fieldsFor(state.g).forEach(function (f) { m[f[0]] = clamp(state.m[f[0]], f[3], f[4]); });
     if (fam === 'pants') return draftPants(m, o);
     if (fam === 'tops') return draftTop(m, o);
-    if (fam === 'hats') return draftBeanie(m, o);
+    if (fam === 'hats') return state.g === 'cadet' ? draftCadet(m, o) : draftBeanie(m, o);
+    if (state.g === 'fanny') return draftFanny(m, o);
+    if (state.g === 'backpack') return draftBackpack(m, o);
     return draftTote(m, o);
   }
 
@@ -1557,7 +1728,7 @@
     function line(str, s, bold, indent) { out.push('0 g ' + T(54 + (indent || 0), y, s, str, bold)); y -= s * 1.45; }
     line('NOCIV CUT & SEW', 20, true); y -= 4;
     line(nameOf(state.g).toUpperCase() + ' PATTERN', 13, true);
-    var fam = famOf(state.g), meas = FIELDS[fam].map(function (f) { return f[1] + ' ' + fmt(state.m[f[0]]); }).join(',  ');
+    var fam = famOf(state.g), meas = fieldsFor(state.g).map(function (f) { return f[1] + ' ' + fmt(state.m[f[0]]); }).join(',  ');
     line('Made for: ' + meas, 9); if (state.fit && fam !== 'hats' && fam !== 'bags') line('Fit: ' + state.fit, 9);
     y -= 6;
     // test square
@@ -1636,6 +1807,8 @@
         var v = it[0], oldFam = famOf(state.g); state.g = v; viewFam = null;
         if (v === 'tote') { state.m.width = 14; state.m.height = 15; state.m.depth = 4; state.m.strap = 24; }
         if (v === 'minitote') { state.m.width = 10; state.m.height = 10; state.m.depth = 3; state.m.strap = 20; }
+        if (v === 'fanny') { state.m.width = 12; state.m.height = 6; state.m.depth = 2.5; state.m.strap = 36; }
+        if (v === 'backpack') { state.o.pack = 'reg'; state.o.straps = 2; state.m.width = 10; state.m.height = 16; state.m.strap = 30; }
         if (famOf(v) !== oldFam) state.fit = famOf(v) === 'tops' ? 'regular' : 'relaxed';
         buildAll();
       };
@@ -1644,7 +1817,7 @@
   }
   function buildFields() {
     var fam = famOf(state.g), box = $('fields'); box.innerHTML = '';
-    FIELDS[fam].forEach(function (f) {
+    fieldsFor(state.g).forEach(function (f) {
       var d = document.createElement('div'); d.className = 'field';
       var u = state.units, v = state.m[f[0]], shown = u === 'cm' ? Math.round(v * 2.54 * 10) / 10 : Math.round(v * 100) / 100;
       d.innerHTML = '<label for="m_' + f[0] + '">' + f[1] + ' <i></i></label><div class="row"><input id="m_' + f[0] + '" type="number" inputmode="decimal" step="0.25" value="' + shown + '"><span class="unit">' + u + '</span></div><p></p>';
@@ -1675,7 +1848,12 @@
     function opt(label, key, list) {
       var h = document.createElement('div'); h.className = 'group-name'; h.textContent = label; box.appendChild(h);
       var c = document.createElement('div'); c.className = 'chips'; box.appendChild(c);
-      chipsFrom(c, list, String(state.o[key]), function (v) { state.o[key] = v === 'true' ? true : v === 'false' ? false : v; buildOpts(); render(); });
+      chipsFrom(c, list, String(state.o[key]), function (v) {
+        state.o[key] = v === 'true' ? true : v === 'false' ? false : /^\d+$/.test(v) ? Number(v) : v;
+        if (key === 'pack') { state.m.width = v === 'camper' ? 13 : 10; state.m.height = v === 'camper' ? 15 : 16; buildFields(); }
+        if (key === 'straps') { state.m.strap = v === '1' ? 48 : 30; buildFields(); }
+        save(); buildOpts(); render();
+      });
     }
     if (fam === 'pants') {
       opt('Waist', 'waist', [['fly', 'Zip fly + button'], ['elastic', 'Elastic, pull on']]);
@@ -1683,8 +1861,19 @@
       opt('Back pockets', 'bpock', [['true', 'Patch pockets'], ['false', 'None']]);
       if (state.g === 'carpenter') opt('Knees', 'dknee', [['false', 'Single'], ['true', 'Double knee']]);
     }
-    if (fam === 'hats') opt('Cuff', 'cuff', [['true', 'Folded cuff'], ['false', 'No cuff']]);
-    if (fam === 'bags') opt('Inside pocket', 'tpock', [['false', 'None'], ['true', 'Add one']]);
+    if (fam === 'tops') {
+      var necks = state.g === 'tank' || state.g === 'muscle' ? [['crew', 'Crew'], ['vneck', 'V neck']] : [['crew', 'Crew'], ['vneck', 'V neck'], ['polo', 'Polo collar'], ['henley', 'Henley'], ['mock', 'Mock neck']];
+      if (!necks.some(function (n) { return n[0] === state.o.neck; })) state.o.neck = 'crew';
+      opt('Neck', 'neck', necks);
+      if (state.o.neck === 'polo' || state.o.neck === 'henley') opt('Buttons', 'btn', [['2', '2 buttons'], ['3', '3 buttons']]);
+      opt('Chest pocket', 'cpock', [['false', 'None'], ['true', 'Left chest pocket']]);
+    }
+    if (state.g === 'beanie') opt('Cuff', 'cuff', [['true', 'Folded cuff'], ['false', 'No cuff']]);
+    if (state.g === 'tote' || state.g === 'minitote') opt('Inside pocket', 'tpock', [['false', 'None'], ['true', 'Add one']]);
+    if (state.g === 'backpack') {
+      opt('Style', 'pack', [['reg', 'Regular'], ['camper', 'Camper (wide)']]);
+      opt('Straps', 'straps', [['2', 'Two straps'], ['1', 'One strap, across the body']]);
+    }
   }
   function buildAll() { buildGarments(); buildFields(); buildOpts(); render(); buildTP(); }
   var soon = 0;
@@ -1799,7 +1988,8 @@
     hats: ['Rib knit', 'Cotton or acrylic', 'Medium weight'],
     bags: ['Cotton canvas', '100% cotton', '12 oz']
   };
-  function tpVal(k) { var fam = famOf(state.g), v = state.tp[k]; if (v) return v; if (k === 'fabric') return FAB[fam][0]; if (k === 'content') return FAB[fam][1]; if (k === 'weight') return FAB[fam][2]; return ''; }
+  var FAB_G = { cadet: ['Cotton twill', '100% cotton', '8 to 10 oz'], fanny: ['Nylon cordura or canvas', '100% nylon or cotton', '500D or 12 oz'], backpack: ['Waxed or plain canvas', '100% cotton', '12 to 14 oz'], polo: ['Cotton pique', '100% cotton', '200 to 220 GSM'] };
+  function tpVal(k) { var fam = famOf(state.g), v = state.tp[k]; if (v) return v; var row = FAB_G[state.g] || (fam === 'tops' && state.o.neck === 'polo' ? FAB_G.polo : FAB[fam]); if (k === 'fabric') return row[0]; if (k === 'content') return row[1]; if (k === 'weight') return row[2]; return ''; }
 
   // Inches to the nearest 1/8, written the way spec sheets do (20 1/4)
   function frac(v) {
@@ -1827,10 +2017,17 @@
         P('J', 'Sleeve length from shoulder point', 'From the shoulder point along the top of the sleeve to the sleeve edge.', spec.sleeveLen, 0.375, 'front', G.SP, G.ST);
         P('K', 'Bicep, 1 in below armhole', 'Straight across the sleeve, 1 in below the armhole, square to the sleeve.', spec.bicep, 0.25, 'front', G.B1, G.B2);
         P('L', 'Sleeve opening', 'Straight across the sleeve edge, relaxed.', spec.sleeveOpen, 0.25, 'front', G.ST, G.ST2);
-        P('M', 'Neckband height', 'Finished height of the rib band, from the seam to the edge.', spec.band, 0.125, 'list');
+        if (spec.band) P('M', spec.neck === 'mock' ? 'Mock neck height' : 'Neckband height', 'Finished height of the ' + (spec.neck === 'mock' ? 'mock neck' : 'rib band') + ', from the seam to the edge.', spec.band, 0.125, 'list');
       } else P('J', 'Armhole binding', 'Finished binding on the neck and armhole edges, from a 1 1/2 in strip folded in half.', 0.375, 0.125, 'list');
       P(spec.bound ? 'K' : 'N', 'Armhole along the seam', 'Front plus back armhole, measured along the curve of the seam.', spec.armCurve, 0.5, 'list');
       P(spec.bound ? 'L' : 'O', 'Hem height', 'Bottom and sleeve hems, finished.', spec.hem, 0.125, 'list');
+      if (spec.placket) {
+        P('P', 'Placket length', 'From the neck seam at center front down to the bottom of the placket.', spec.placket, 0.25, 'front', [-0.9, spec.fnd], [-0.9, spec.fnd + spec.placket]);
+        P('Q', 'Placket width', 'Finished width of the placket, edge to edge.', spec.placketW, 0.125, 'list');
+        P('R', 'Buttons', spec.btn + ' buttons, ' + BTN_L + 'L (' + BTN_MM + ' mm). Top one 3/4 in below the neck seam, then every 2 in.', spec.btn, 0, 'list');
+      }
+      if (spec.collarH) P('S', 'Collar height at center back', 'From the neck seam to the folded edge of the collar.', spec.collarH, 0.125, 'list');
+      if (spec.cpock) P('T', 'Chest pocket', 'Finished pocket, width x height: 4 1/2 x 5 in, on the wearer\'s left chest.', 4.5, 0.125, 'list');
     } else if (f === 'pants') {
       P('A', spec.elastic ? 'Waist, relaxed' : 'Waist', spec.elastic ? 'Straight across the top edge, relaxed (elastic not stretched).' : 'Straight across the top of the waistband, edge to edge, buttoned and zipped.', spec.waistFlat, spec.elastic ? 0.5 : 0.375, 'front', [-G.W2, -0.6], [G.W2, -0.6]);
       if (spec.elastic) P('A2', 'Waist, extended', 'Straight across the top edge, stretched all the way.', spec.waistExt, 0.5, 'list');
@@ -1845,11 +2042,31 @@
       P('J', 'Waistband height', 'Finished height of the waistband' + (spec.elastic ? ' casing' : '') + '.', spec.band, 0.125, 'list');
       P('K', 'Hem height', 'Finished leg hem, turned 1/2 in then 1 in.', spec.hem, 0.125, 'list');
       if (spec.zipper) P('L', 'Fly opening', 'Zipper length used.', spec.zipper, 0.25, 'list');
+    } else if (f === 'hats' && spec.kind === 'cadet') {
+      P('A', 'Crown top across', 'Straight across the flat top of the crown.', spec.crownD, 0.25, 'front', [-spec.crownD / 2, -0.6], [spec.crownD / 2, -0.6]);
+      P('B', 'Band height', 'From the top seam to the bottom edge of the band, at the side.', spec.bandH, 0.125, 'front', [spec.crownD / 2 + 0.7, 0], [spec.crownD / 2 + 0.7, spec.bandH]);
+      P('C', 'Inside circumference', 'All the way around the inside of the bottom edge.', spec.circ, 0.25, 'list');
+      P('D', 'Brim projection', 'From the band straight out to the front edge of the brim, at center front.', spec.brim, 0.125, 'list');
+      P('E', 'Brim span', 'Along the band, from one end of the brim to the other.', spec.brimSpan, 0.25, 'list');
     } else if (f === 'hats') {
       P('A', 'Width, laid flat', 'Straight across the bottom edge, laid flat, relaxed.', spec.flat, 0.25, 'front', [-spec.flat / 2, G.ht + 0.6], [spec.flat / 2, G.ht + 0.6]);
       P('B', 'Height, crown to bottom edge', spec.cuff ? 'From the top of the crown to the cuff fold, cuff folded up.' : 'From the top of the crown to the bottom edge.', spec.crown, 0.25, 'front', [spec.flat / 2 + 0.7, 0], [spec.flat / 2 + 0.7, G.ht]);
       if (spec.cuff) P('C', 'Cuff height', 'Finished cuff, folded.', spec.cuff, 0.125, 'list');
       P(spec.cuff ? 'D' : 'C', 'Circumference, relaxed', 'All the way around the bottom edge, relaxed. It stretches to fit.', spec.circ, 0.5, 'list');
+    } else if (spec.kind === 'fanny') {
+      P('A', 'Width', 'Side to side across the front panel.', spec.width, 0.25, 'front', [-spec.width / 2, -0.6], [spec.width / 2, -0.6]);
+      P('B', 'Height', 'Top to bottom of the front panel.', spec.height, 0.25, 'front', [spec.width / 2 + 0.7, 0], [spec.width / 2 + 0.7, spec.height]);
+      P('C', 'Depth', 'Gusset width, front panel seam to back panel seam.', spec.depth, 0.125, 'list');
+      P('D', 'Zipper length', 'Zipper used, #5 coil.', spec.zipper, 0, 'list');
+      P('E', 'Belt length', 'All the way around, buckled, at the longest setting.', spec.strap + 2, 1, 'list');
+      P('F', 'Webbing width', 'Belt webbing.', spec.strapW, 0, 'list');
+    } else if (spec.kind === 'backpack') {
+      P('A', 'Across the bottom', 'Straight across the round base.', spec.diameter, 0.25, 'front', [-spec.diameter / 2, spec.height + 0.6], [spec.diameter / 2, spec.height + 0.6]);
+      P('B', 'Height', 'From the base seam straight up to the top edge.', spec.height, 0.25, 'front', [spec.diameter / 2 + 0.7, 0], [spec.diameter / 2 + 0.7, spec.height]);
+      P('C', 'Circumference', 'All the way around the body.', spec.circ, 0.5, 'list');
+      P('D', 'Flap length', 'From the back seam over the top to the bottom edge of the flap.', spec.flapL, 0.25, 'list');
+      P('E', 'Strap length', (spec.straps === 1 ? 'The one strap' : 'Each strap') + ', end to end before sewing in.', spec.strap, 0.5, 'list');
+      P('F', 'Strap width', 'Finished strap, folded in quarters.', spec.strapW, 0.125, 'list');
     } else {
       P('A', 'Width at top', 'Straight across the top edge, laid flat.', spec.width, 0.25, 'front', [-spec.width / 2, -0.6], [spec.width / 2, -0.6]);
       P('B', 'Height', 'From the top edge straight down to the bottom fold, laid flat.', spec.height, 0.25, 'front', [spec.width / 2 + 0.7, 0], [spec.width / 2 + 0.7, spec.height]);
@@ -1889,7 +2106,7 @@
       G.tIn = [lc - sp.thigh / 2, G.yc + 1]; G.tOut = [lc + sp.thigh / 2, G.yc + 1];
       G.kIn = [lc - sp.knee / 2, G.yk]; G.kOut = [lc + sp.knee / 2, G.yk];
       G.hemIn = [lc - sp.legOpen / 2, G.yh]; G.hemOut = [lc + sp.legOpen / 2, G.yh]; G.cx0 = 0; G.T = G.tOut[0];
-    } else if (sp.fam === 'hats') { G.ht = sp.crown; }
+    } else if (sp.fam === 'hats') { G.ht = sp.kind === 'cadet' ? sp.bandH : sp.crown; }
     return G;
   }
   // Returns drawing items for the front or back flat.
@@ -1902,8 +2119,9 @@
       else right = right.concat(cub(G.SP, [sp.sw - 0.35, sp.dY + (sp.ad - sp.dY) * 0.55], [hc - (hc - sp.sw) * 0.75, sp.ad], G.UA, 10).slice(1, -1));
       right.push(G.UA, [hc, L], [0, L]);
       var bHalf = cub([0, bnd], [nw * 0.5, bnd], [nw - 0.1, bnd * 0.7], [nw, 0], 14), bNeck = RV(MX(bHalf)).concat(bHalf.slice(1));
-      var fHalf = cub([0, fnd], [nw * 0.45, fnd], [nw - 0.05, fnd * 0.5], [nw, 0], 16), fNeck = RV(MX(fHalf)).concat(fHalf.slice(1));
+      var fHalf = sp.neck === 'vneck' ? cub([0, fnd], [nw * 0.38, fnd * 0.62], [nw * 0.82, fnd * 0.2], [nw, 0], 16) : cub([0, fnd], [nw * 0.45, fnd], [nw - 0.05, fnd * 0.5], [nw, 0], 16), fNeck = RV(MX(fHalf)).concat(fHalf.slice(1));
       var bw = band || 0.375, bEdge = offsetPts(bNeck, band ? bw : 0, up), fEdge = offsetPts(fNeck, band ? bw : 0, up);
+      if (sp.neck === 'mock') { bEdge = bNeck.map(function (p) { return [p[0] * 0.96, p[1] - band]; }); fEdge = fNeck.map(function (p) { return [p[0] * 0.96, p[1] - band]; }); }
       var outline = right.concat(RV(MX(right)).slice(1));
       outline = outline.concat(RV(bEdge));
       it.push(shape(outline, 'out', 'body'));
@@ -1913,12 +2131,35 @@
         it.push(seg(bNeck, 'thin'));
         it.push(seg(fNeck, band ? 'seam' : 'out'));
         it.push(seg(offsetPts(fNeck, band ? 0.14 : 0.3, down), 'stitch'));
+        if (sp.neck === 'vneck' && band) it.push(seg([[0, fnd], [0, fnd - band * 0.9]], 'seam'));
+        if (sp.placket) {
+          var pt = sp.neck === 'polo' ? fnd : fnd, pb = fnd + sp.placket;
+          it.push(shape([[-0.5, pt], [0.5, pt], [0.5, pb], [-0.5, pb]], 'out', 'body'));
+          it.push(seg([[-0.38, pt], [-0.38, pb - 0.12], [0.38, pb - 0.12], [0.38, pt]], 'stitch'));
+          sp.btnAt.forEach(function (y) { it.push({ k: 'c', c: [0, pt + y], r: 0.2, st: 'out', fill: 'trim' }); });
+        }
+        if (sp.neck === 'polo') {
+          // Collar stand behind the neck, then the collar falls over the shoulders to points at the placket.
+          var stand = offsetPts(bNeck, 0.55, up);
+          it.push(shape(bNeck.concat(RV(stand)), 'out', 'inside'));
+          [1, -1].forEach(function (sg) {
+            function Q(p) { return [p[0] * sg, p[1]]; }
+            // Collar wing: from the placket top, along the neckline, up over the stand, out on the shoulder, back down to a point.
+            var outerC = cub([nw + 0.15, -0.6], [nw + 1.9, -0.35], [nw + 2.3, 1.2], [nw + 1.7, 2.1], 10);
+            var downC = cub([nw + 1.7, 2.1], [nw * 0.9, fnd + 0.5], [1.6, fnd + 1.6], [0.95, fnd + 2.7], 10);
+            var wing = [[0.5, fnd]].concat(fHalf.slice(Math.round(fHalf.length * 0.12)), outerC, downC.slice(1));
+            it.push(shape(wing.map(Q), 'out', 'body'));
+            it.push(seg(offsetPts(outerC.concat(downC.slice(1)), 0.18, [nw * 0.6, fnd * 0.6]).map(Q), 'stitch'));
+          });
+        }
       } else {
         if (band) it.push(shape(bNeck.concat(RV(bEdge)), 'out', 'body'));
+        if (sp.neck === 'polo') { var cTop = offsetPts(bNeck, 0.55, up), cBot = offsetPts(bNeck, sp.collarH - 0.55, down); it.push(shape(cTop.concat(RV(cBot)), 'out', 'body')); it.push(seg(offsetPts(bNeck, sp.collarH - 0.7, down), 'stitch')); }
         it.push(seg(bNeck, band ? 'seam' : 'out'));
         it.push(seg(offsetPts(bNeck, band ? 0.4 : 0.3, down), 'stitch'));
-        if (state.tp.label === 'woven') it.push(shape([[-0.9, bnd + 0.55], [0.9, bnd + 0.55], [0.9, bnd + 1.45], [-0.9, bnd + 1.45]], 'thin', 'label'));
-        else if (state.tp.label === 'printed') it.push(shape([[-1.1, bnd + 0.6], [1.1, bnd + 0.6], [1.1, bnd + 2.1], [-1.1, bnd + 2.1]], 'stitch', null));
+        var lb = bnd + (sp.neck === 'polo' ? sp.collarH - 0.4 : 0);
+        if (state.tp.label === 'woven') it.push(shape([[-0.9, lb + 0.55], [0.9, lb + 0.55], [0.9, lb + 1.45], [-0.9, lb + 1.45]], 'thin', 'label'));
+        else if (state.tp.label === 'printed') it.push(shape([[-1.1, lb + 0.6], [1.1, lb + 0.6], [1.1, lb + 2.1], [-1.1, lb + 2.1]], 'stitch', null));
       }
       [1, -1].forEach(function (sg) {
         function S(p) { return [p[0] * sg, p[1]]; }
@@ -1931,6 +2172,12 @@
         }
       });
       [0.6, 0.85].forEach(function (k) { it.push(seg([[-hc, L - k], [hc, L - k]], 'stitch')); });
+      if (!back && sp.cpock) {
+        // Wearer's left chest = the right side of the front flat.
+        var px = Math.min(hc - 5, 2.25), py = Math.max(fnd + (sp.placket ? sp.placket - 2 : 2), sp.ad - 1.5);
+        var pkb = [[px, py], [px + 4.5, py], [px + 4.5, py + 5], [px, py + 5]];
+        it.push(shape(pkb, 'out', 'body')); it.push(seg(offsetPts(pkb.concat([pkb[0]]), 0.12, [px + 2.25, py + 2.5]), 'stitch')); it.push(seg([[px, py + 0.75], [px + 4.5, py + 0.75]], 'stitch'));
+      }
     } else if (sp.fam === 'pants') {
       var W2 = G.W2, H2 = G.H2, bnd2 = sp.band, yc = G.yc;
       var side1 = cub([W2, bnd2], [W2 + (H2 - W2) * 0.35, bnd2 + (sp.hipAt - bnd2) * 0.45], [H2, sp.hipAt - (sp.hipAt - bnd2) * 0.2], [H2, sp.hipAt], 10);
@@ -1972,6 +2219,16 @@
         var ya = yc + 2, yb2 = yc + 11; it.push(shape([[-f1(ya) + 0.05, ya], [-f1(ya) + 3.55, ya], [-f1(yb2) + 3.55, yb2], [-f1(yb2) + 0.05, yb2]], 'out', 'body'));
         it.push(shape([[f1(yc + 1.5) - 0.9, yc + 1.5], [f1(yc + 1.5) - 0.05, yc + 1.5], [f1(yc + 5.5) - 0.05, yc + 5.5], [f1(yc + 5.5) - 0.9, yc + 5.5]], 'out', 'body'));
       }
+    } else if (sp.fam === 'hats' && sp.kind === 'cadet') {
+      var cw = sp.crownD, bh = sp.bandH;
+      it.push(shape([[-cw / 2, 0]].concat(cub([-cw / 2, 0], [-cw * 0.2, -0.28], [cw * 0.2, -0.28], [cw / 2, 0], 12).slice(1), [[cw / 2, bh], [-cw / 2, bh]]), 'out', 'body'));
+      it.push(seg(cub([-cw / 2 + 0.12, 0.16], [-cw * 0.2, -0.1], [cw * 0.2, -0.1], [cw / 2 - 0.12, 0.16], 12), 'stitch'));
+      if (!back) {
+        var brimF = [[-cw * 0.5, bh]].concat(cub([-cw * 0.5, bh], [-cw * 0.3, bh + 1.05], [cw * 0.3, bh + 1.05], [cw * 0.5, bh], 16).slice(1));
+        it.push(shape(brimF.concat(cub([cw * 0.5, bh], [cw * 0.25, bh + 0.25], [-cw * 0.25, bh + 0.25], [-cw * 0.5, bh], 10).slice(1)), 'out', 'inside'));
+        [0.35, 0.55].forEach(function (k) { it.push(seg(cub([-cw * 0.45, bh + 0.05], [-cw * 0.27, bh + 1.05 * (1 - k) + 0.1], [cw * 0.27, bh + 1.05 * (1 - k) + 0.1], [cw * 0.45, bh + 0.05], 14), 'stitch')); });
+      } else it.push(seg([[0, 0.02], [0, bh]], 'seam'));
+      it.push(seg([[-cw / 2, bh - 0.25], [cw / 2, bh - 0.25]], 'stitch'));
     } else if (sp.fam === 'hats') {
       var F = sp.flat, ht = G.ht;
       var dome = [[-F / 2, ht]].concat(cub([-F / 2, ht * 0.45], [-F / 2, ht * 0.1], [-F * 0.24, 0], [0, 0], 12), cub([0, 0], [F * 0.24, 0], [F / 2, ht * 0.1], [F / 2, ht * 0.45], 12).slice(1), [[F / 2, ht]]);
@@ -1980,6 +2237,35 @@
       [1, -1].forEach(function (sg) { it.push(seg(cub([0, 0.05], [sg * F / 12, 0.25], [sg * F / 6, ht * 0.2], [sg * F / 6, ht * 0.5], 10).concat([[sg * F / 6, cTop]]), 'seam')); });
       if (sp.cuff) { it.push(shape([[-F / 2, cTop], [F / 2, cTop], [F / 2, ht], [-F / 2, ht]], 'out', 'body')); for (var rx = -F / 2 + 0.35; rx < F / 2; rx += 0.35) it.push(seg([[rx, cTop + 0.1], [rx, ht - 0.1]], 'thin')); }
       else it.push(seg([[-F / 2, ht - 0.3], [F / 2, ht - 0.3]], 'stitch'));
+    } else if (sp.kind === 'fanny') {
+      var FW = sp.width, FH = sp.height, fr = Math.min(2, FH * 0.35);
+      function rrect(x0, y0, w, h, r) { var H2 = Math.PI / 2; return [].concat(arcPts(x0 + w - r, y0 + r, r, -H2, 0, 6), arcPts(x0 + w - r, y0 + h - r, r, 0, H2, 6), arcPts(x0 + r, y0 + h - r, r, H2, Math.PI, 6), arcPts(x0 + r, y0 + r, r, Math.PI, 3 * H2, 6)); }
+      var wy = FH * 0.42;
+      it.push(shape([[-FW / 2 - 4, wy], [FW / 2 + 4, wy], [FW / 2 + 4, wy + 1], [-FW / 2 - 4, wy + 1]], 'out', 'trim'));
+      it.push(shape(rrect(-FW / 2, 0, FW, FH, fr), 'out', 'body'));
+      it.push(seg(rrect(-FW / 2 + 0.15, 0.15, FW - 0.3, FH - 0.3, Math.max(0.2, fr - 0.15)).concat([[FW / 2 - fr, 0.15]]), 'stitch'));
+      if (!back) {
+        it.push(seg([[-FW / 2 + fr * 0.7, 0.45], [FW / 2 - fr * 0.7, 0.45]], 'seam'));
+        for (var zx = -FW / 2 + fr * 0.7; zx < FW / 2 - fr * 0.7; zx += 0.22) it.push(seg([[zx, 0.36], [zx, 0.54]], 'thin'));
+        it.push(shape([[FW / 2 - fr * 0.7 - 0.35, 0.3], [FW / 2 - fr * 0.7 + 0.1, 0.3], [FW / 2 - fr * 0.7 + 0.1, 1.2], [FW / 2 - fr * 0.7 - 0.35, 1.2]], 'out', 'trim'));
+      }
+      it.push(shape([[-FW / 2 - 4, wy - 0.25], [-FW / 2 - 2.6, wy - 0.25], [-FW / 2 - 2.6, wy + 1.25], [-FW / 2 - 4, wy + 1.25]], 'out', 'trim'));
+    } else if (sp.kind === 'backpack') {
+      var Dd = sp.diameter, BH = sp.height, drop = Math.max(2, sp.flapL - Dd * 0.6), fw2 = sp.flapW;
+      it.push(shape([[-Dd / 2, 0], [Dd / 2, 0], [Dd / 2, BH]].concat(cub([Dd / 2, BH], [Dd * 0.3, BH + 0.7], [-Dd * 0.3, BH + 0.7], [-Dd / 2, BH], 12).slice(1)), 'out', 'body'));
+      it.push(seg(cub([Dd / 2, BH], [Dd * 0.3, BH - 0.7], [-Dd * 0.3, BH - 0.7], [-Dd / 2, BH], 12), 'seam'));
+      it.push(seg([[-Dd / 2, 1.5], [Dd / 2, 1.5]], 'stitch'));
+      if (!back) {
+        var fr2 = Math.min(fw2 * 0.3, 2.5), H2b = Math.PI / 2;
+        var flapS = [[-fw2 / 2, -0.4], [fw2 / 2, -0.4]].concat(arcPts(fw2 / 2 - fr2, drop - fr2, fr2, 0, H2b, 6), arcPts(-fw2 / 2 + fr2, drop - fr2, fr2, H2b, Math.PI, 6));
+        it.push(shape(flapS, 'out', 'body'));
+        it.push(seg(offsetPts(flapS.concat([flapS[0]]), 0.2, [0, drop / 2]).slice(1), 'stitch'));
+        it.push(shape([[-0.6, drop - 0.3], [0.6, drop - 0.3], [0.6, drop + 1.6], [-0.6, drop + 1.6]], 'out', 'trim'));
+      } else {
+        if (sp.straps === 1) it.push(shape([[Dd / 2 - 1.5, 1.2], [Dd / 2 - 0.25, 1.2], [-Dd / 2 + 1.25, BH - 0.2], [-Dd / 2 + 0.05, BH - 0.5]], 'out', 'trim'));
+        else [1, -1].forEach(function (sg) { it.push(shape([[sg * 0.5, 1.6], [sg * 1.75, 1.6]].concat(cub([sg * 1.75, 1.6], [sg * 2.4, BH * 0.45], [sg * Dd * 0.5, BH * 0.7], [sg * (Dd / 2 - 0.4), BH - 0.6], 10).slice(1), cub([sg * (Dd / 2 - 1.6), BH - 0.6], [sg * Dd * 0.32, BH * 0.7], [sg * 1.1, BH * 0.45], [sg * 0.5, 1.6], 10).slice(1)), 'out', 'trim')); });
+        it.push(seg([[0, 0], [0, BH + 0.5]], 'seam'));
+      }
     } else {
       var W = sp.width, H = sp.height, c = sp.depth / 2, a = Math.max(1, (W - 6) / 2), len = Math.max(4, sp.strap - 3);
       var bE = solve(function (b) { return Math.PI * (3 * (a + b) - Math.sqrt((3 * a + b) * (a + 3 * b))) / 2; }, len, 0.5, 40, false);
@@ -2146,7 +2432,12 @@
   function details(sp) {
     var f = sp.fam, d = [];
     if (f === 'tops') {
-      d.push(sp.cut === 'tank' ? 'Self fabric binding on the neck and armholes, from a 1 1/2 in strip folded in half.' : '1x1 rib neckband, ' + frac(sp.band) + ' in finished, cut to 85% of the neckline so it lies flat.');
+      if (sp.neck === 'polo') d.push('Polo collar, self fabric, ' + frac(sp.collarH) + ' in at center back, folded, interfaced on the outer half. Or use a ready made flat knit collar the same length.');
+      if (sp.placket) d.push((sp.neck === 'polo' ? 'Polo' : 'Henley') + ' placket, ' + frac(sp.placket) + ' in long, 1 in wide, interfaced. ' + sp.btn + ' buttons, ' + BTN_L + 'L (' + BTN_MM + ' mm), 2 in apart, top one 3/4 in below the neck seam. Box stitch at the bottom.');
+      if (sp.neck === 'vneck') d.push('V neck, ' + frac(sp.fnd) + ' in front drop, band mitered at center front.');
+      if (sp.neck === 'mock') d.push('Mock neck, ' + frac(sp.band) + ' in tall, folded, cut to 90% of the neckline.');
+      if (sp.cpock) d.push('Patch pocket on the wearer\'s left chest, 4 1/2 x 5 in finished, 3/4 in top hem.');
+      if (sp.neck === 'crew' || sp.neck === 'henley' || sp.neck === 'vneck' || sp.cut === 'tank') d.push(sp.cut === 'tank' ? 'Self fabric binding on the neck and armholes, from a 1 1/2 in strip folded in half.' : '1x1 rib neckband, ' + frac(sp.band) + ' in finished, cut to 85% of the neckline so it lies flat.');
       if (sp.cut === 'muscle') d.push('Self fabric binding on the armholes.');
       if (!sp.bound) d.push('Set in sleeves, ' + (sp.cut === 'tee' ? 'short sleeve' : 'short sleeve, ' + nameOf(state.g).toLowerCase() + ' shape') + '.');
       d.push('Side seams from ' + (sp.bound ? 'armhole' : 'sleeve hem') + ' to bottom hem in one seam.');
@@ -2163,7 +2454,12 @@
       if (state.g === 'army') d.push('Cargo pockets with a box pleat and a flap at the side of each leg at the knee. Drawcord at the leg hem.');
       d.push('Leg hems 1 in, turned 1/2 in then 1 in, topstitched.');
     } else if (f === 'hats') {
-      d.push('Six panels joined at the crown.'); d.push(sp.cuff ? 'Folded cuff, ' + frac(sp.cuff) + ' in finished.' : 'Bottom edge turned 3/8 in and stretch stitched.');
+      if (sp.kind === 'cadet') { d.push('Flat round crown top, ' + frac(sp.crownD) + ' in across, on a ' + frac(sp.bandH) + ' in band.'); d.push('Curved brim, ' + frac(sp.brim) + ' in at center front, stiffened, topstitched in rows.'); d.push('Fully lined. Band seam at center back. Bottom edge topstitched.'); }
+      else { d.push('Six panels joined at the crown.'); d.push(sp.cuff ? 'Folded cuff, ' + frac(sp.cuff) + ' in finished.' : 'Bottom edge turned 3/8 in and stretch stitched.'); }
+    } else if (sp.kind === 'fanny') {
+      d.push('Rounded front and back panels, ' + frac(sp.width) + ' x ' + frac(sp.height) + ' in, ' + frac(sp.depth) + ' in gusset all the way around.'); d.push(sp.zipper + ' in coil zipper across the top.'); d.push('1 in webbing belt with a side release buckle and a slider, sewn into the gusset at both sides.');
+    } else if (sp.kind === 'backpack') {
+      d.push((sp.style === 'camper' ? 'Wide camper style' : 'Regular') + ' tube body, ' + frac(sp.diameter) + ' in round base, ' + frac(sp.height) + ' in tall.'); d.push('Drawstring top: 1 1/2 in casing, cord out of 2 buttonholes or grommets at center front.'); d.push('Flap over the top, ' + frac(sp.flapW) + ' x ' + frac(sp.flapL) + ' in, sewn in at the center back.'); d.push(sp.straps === 1 ? 'One strap across the body, 1 1/4 in wide.' : 'Two shoulder straps, 1 1/4 in wide, sewn in at the center back top and to tabs at the base.');
     } else {
       d.push('Two body panels' + (sp.depth ? ' with boxed corners (' + frac(sp.depth) + ' in gusset)' : '') + '.'); d.push('Two straps, 1 1/4 in finished, sewn in 3 in from each side seam, box X stitched.'); d.push('Top hem turned 1/2 in then 1 in, two rows of topstitching.'); if (sp.tpock) d.push('Inside patch pocket.');
     }
@@ -2179,6 +2475,8 @@
       c.push(['Seam allowance', 'As cut in the pattern: 3/8 in at the neck and armholes, 1/2 in at the shoulders and sides, 1 in at the hems.']);
       c.push([sp.cut === 'tank' ? 'Bindings' : 'Neckband', sp.cut === 'tank' ? 'Folded self fabric binding, stretched slightly to fit, joined at the left shoulder, coverstitched.' : 'Band joined into a loop, folded, sewn with overlock and stretched evenly to the neckline. Band seam at the wearer\'s left shoulder. Coverstitch below the seam. Optional back neck tape.']);
       c.push(['Hems', 'Turned 1 in, 2 needle coverstitch (ISO 406).']);
+      if (sp.placket) c.push(['Placket', 'Two interfaced strips sewn 1/2 in each side of the center front, slit, turned through, overlapped and box stitched at the bottom. Buttonholes 5/8 in long, lockstitch (ISO 301) bartack ends.']);
+      if (sp.neck === 'polo') c.push(['Collar', 'Folded, ends sewn and turned, sewn to the neckline between the placket edges. Back neck seam covered with twill tape, shoulder to shoulder.']);
       c.push(['Stitches per inch', '10 to 12 SPI on seams, 12 to 14 SPI at the neck and hems (common retail standard for knits).']);
     } else if (f === 'pants') {
       c.push(['Seams', 'Inseam and side seams: lockstitch (ISO 301) plus overlock, or a 5 thread safety stitch (ISO 516). Crotch seam sewn twice for strength.']);
@@ -2187,7 +2485,8 @@
       c.push(['Stitches per inch', '10 to 12 SPI on general seams, 8 to 10 SPI for denim, twill and other heavy wovens (common retail standard).']);
       if (!sp.elastic) c.push(['Closures', sp.zipper + ' in pants zipper, one button and buttonhole on the waistband.']); else c.push(['Elastic', '1 1/2 in wide elastic cut to ' + frac(state.m.waist - 2) + ' in (body waist minus 2 in), ends overlapped 1 in and stitched.']);
     } else if (f === 'hats') {
-      c.push(['Seams', '3/8 in, overlock or stretch stitch.']); c.push(['Stitches per inch', '10 to 12 SPI (knits).']);
+      if (sp.kind === 'cadet') { c.push(['Seams', '3/8 in, lockstitch (ISO 301), curves clipped.']); c.push(['Brim', 'Two layers plus stiffener, topstitched in rows about 1/4 in apart.']); c.push(['Stitches per inch', '10 to 12 SPI (wovens), 8 to 10 for heavy twill or canvas.']); }
+      else { c.push(['Seams', '3/8 in, overlock or stretch stitch.']); c.push(['Stitches per inch', '10 to 12 SPI (knits).']); }
     } else {
       c.push(['Seams', '1/2 in, raw edges finished with overlock or zigzag.']); c.push(['Straps', 'Folded in quarters, topstitched on both edges, box X stitched where they attach.']); c.push(['Stitches per inch', '8 to 10 SPI for heavy wovens like canvas and denim.']);
     }
@@ -2196,7 +2495,13 @@
   function bom(sp, res) {
     var f = sp.fam, r = [], fab = tpVal('fabric') + ', ' + tpVal('content') + ', ' + tpVal('weight');
     r.push(['Main fabric', fab, state.tp.colorName + ' (' + state.tp.color.toUpperCase() + ')', 'About ' + fabricYards(res) + ' yd at 58 in wide']);
-    if (f === 'tops' && sp.cut !== 'tank') r.push(['Rib', '1x1 rib, cotton with a little spandex so it springs back', 'Match main', 'Neckband']);
+    if (f === 'tops' && sp.cut !== 'tank' && sp.neck !== 'polo') r.push(['Rib', '1x1 rib, cotton with a little spandex so it springs back', 'Match main', sp.neck === 'mock' ? 'Mock neck' : 'Neckband']);
+    if (f === 'tops' && sp.neck === 'polo') r.push(['Collar', 'Self fabric, or a ready made flat knit collar', 'Match main', 'Neck']);
+    if (f === 'tops' && sp.placket) { r.push(['Buttons', sp.btn + ' x ' + BTN_L + 'L (' + BTN_MM + ' mm), 2 or 4 hole, plus 1 spare', 'Your pick', 'Placket']); r.push(['Interfacing', 'Lightweight fusible knit interfacing', 'White', 'Placket' + (sp.neck === 'polo' ? ' and collar' : '')]); }
+    if (f === 'tops' && sp.neck === 'polo') r.push(['Twill tape', '3/8 in cotton twill tape, about ' + Math.ceil(sp.neckLen / 2 + 2) + ' in', 'Match main', 'Back neck seam']);
+    if (f === 'hats' && sp.kind === 'cadet') { r.push(['Lining', 'Cotton lawn or poplin', 'Your pick', 'Crown and band']); r.push(['Interfacing', 'Medium fusible woven interfacing', 'White', 'Crown top and band']); r.push(['Brim stiffener', 'Plastic hat brim insert or heavy fusible', 'White', 'Brim']); }
+    if (sp.kind === 'fanny') { r.push(['Zipper', sp.zipper + ' in #5 coil zipper', 'Match main', 'Top']); r.push(['Webbing', '1 in nylon or polyester webbing, ' + (sp.longStrap + sp.shortStrap) + ' in', 'Your pick', 'Belt']); r.push(['Buckle', '1 in side release buckle + 1 in slider', 'Black', 'Belt']); }
+    if (sp.kind === 'backpack') { r.push(['Cord', 'Round drawcord, ' + sp.cord + ' in', 'Your pick', 'Top casing']); r.push(['Interfacing', 'Heavy fusible, or foam for a stiff base', 'White', 'Flap and base']); r.push(['Grommets', '2 small grommets (or 2 buttonholes)', 'Your pick', 'Center front casing']); }
     if (f === 'hats' && sp.cuff) r.push(['Cuff', 'Same rib knit as the body', 'Match main', 'Cuff']);
     r.push(['Thread', 'Polyester core spun, color matched', 'Match main', 'All seams']);
     if (f === 'pants' && !sp.elastic) { r.push(['Zipper', sp.zipper + ' in pants zipper, metal or nylon', 'Match main', 'Fly']); r.push(['Button', 'Waistband button or jeans tack button', 'Your pick', 'Waistband, 1']); }
@@ -2412,11 +2717,12 @@
   var PM_LABEL = { chest: 'Chest, flat (armpit to armpit)', length: 'Length from high point shoulder', across: 'Across shoulder', waistFlat: 'Waist, flat', hipFlat: 'Hip, flat', crotchDepth: 'Top of waistband to crotch', inseam: 'Inseam', flat: 'Width, flat', width: 'Width at top', height: 'Height' };
   // Turn garment numbers into the body numbers that make the same garment with the fit you picked
   function pmApply(r) {
-    var fam = famOf(state.g), lim = {}; FIELDS[fam].forEach(function (f) { lim[f[0]] = [f[3], f[4]]; });
+    var fam = famOf(state.g), lim = {}; fieldsFor(state.g).forEach(function (f) { lim[f[0]] = [f[3], f[4]]; });
     function fit(field, key, target) { var x = solve(function (v) { var o2 = {}; o2[field] = v; return draftWith(o2).spec[key]; }, target, lim[field][0], lim[field][1], false); state.m[field] = Math.round(x * 8) / 8; }
     if (fam === 'tops') { fit('chest', 'chest', r.chest); state.m.length = Math.round(r.length * 8) / 8; if (state.g !== 'tank') fit('shoulder', 'across', r.across); }
     else if (fam === 'pants') { fit('seat', 'hipFlat', r.hipFlat); fit('waist', 'waistFlat', r.waistFlat); fit('rise', 'crotchDepth', r.crotchDepth); fit('inseam', 'inseam', r.inseam); }
     else if (fam === 'hats') fit('head', 'flat', r.flat);
+    else if (state.g === 'backpack') { state.m.width = Math.round(r.width * 2 / Math.PI * 8) / 8; state.m.height = Math.round(r.height * 8) / 8; } // a tube laid flat is half its circumference wide
     else { state.m.width = Math.round(r.width * 8) / 8; state.m.height = Math.round(r.height * 8) / 8; }
     save(); buildFields(); render(); buildTP();
   }
@@ -2602,7 +2908,7 @@
   })();
 
   // Exposed for testing only.
-  window.__cs = { tpPages: function () { return tpPages(current.res, null); }, poms: function () { return poms(current.res.spec, flatGeo(current.res.spec)); }, graded: function () { return graded(poms(current.res.spec, flatGeo(current.res.spec))); }, state: state, draft: draft, layout: layout, outline: outline, offset: offset, plen: plen, files: function () { return files; }, current: function () { return current; }, render: render, buildAll: buildAll };
+  window.__cs = { flatsSVG: function () { return flatsFileSVG(current.res, true); }, tpPages: function () { return tpPages(current.res, null); }, poms: function () { return poms(current.res.spec, flatGeo(current.res.spec)); }, graded: function () { return graded(poms(current.res.spec, flatGeo(current.res.spec))); }, state: state, draft: draft, layout: layout, outline: outline, offset: offset, plen: plen, files: function () { return files; }, current: function () { return current; }, render: render, buildAll: buildAll };
   // put the remembered paper and view back on the buttons
   ['paper', 'view'].forEach(function (id) { $(id).querySelectorAll('[data-v]').forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.v === state[id])); }); });
   if (window.nocivFocus) window.nocivFocus(document.querySelector('.preview-col'), $('stage'), 'Screen locked. Drag to look around, pinch to zoom.');
