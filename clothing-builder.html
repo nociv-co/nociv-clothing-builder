@@ -1328,7 +1328,7 @@
   // STATE
   // =====================================================================
   var state = {
-    g: 'wide', units: 'in', view: 'pages', fit: 'relaxed', paper: 'letter',
+    g: 'wide', units: 'in', view: 'flat', fit: 'relaxed', paper: 'letter',
     o: { waist: 'fly', fpock: true, bpock: true, dknee: false, cuff: true, tpock: false, neck: 'crew', btn: 3, cpock: false, pack: 'reg', straps: 2 },
     m: { waist: 31, seat: 39, rise: 10.5, inseam: 31, chest: 40, shoulder: 17.5, length: 28, head: 22, width: 14, height: 15, depth: 4, strap: 24 }
   };
@@ -1337,11 +1337,11 @@
     if (saved && saved.m) {
       Object.assign(state.m, saved.m);
       ['units', 'g', 'fit', 'paper'].forEach(function (k) { if (saved[k]) state[k] = saved[k]; });
-      if (saved.v2 && saved.view) state.view = saved.view; // Pages is the default now (Oct 14), older saved views reset once
+      if (saved.v3 && saved.view) state.view = saved.view; // Flat is the default now (Oct 16), older saved views reset once
       if (saved.o) Object.assign(state.o, saved.o);
     }
   } catch (e) {}
-  function save() { try { localStorage.setItem('nocivCutSew', JSON.stringify({ v2: 1, m: state.m, units: state.units, g: state.g, fit: state.fit, paper: state.paper, view: state.view, o: state.o })); } catch (e) {} }
+  function save() { try { localStorage.setItem('nocivCutSew', JSON.stringify({ v3: 1, m: state.m, units: state.units, g: state.g, fit: state.fit, paper: state.paper, view: state.view, o: state.o })); } catch (e) {} }
   function famOf(g) { for (var i = 0; i < GROUPS.length; i++) for (var j = 0; j < GROUPS[i].items.length; j++) if (GROUPS[i].items[j][0] === g) return GROUPS[i].id; return 'pants'; }
   function baseName(g) { for (var i = 0; i < GROUPS.length; i++) for (var j = 0; j < GROUPS[i].items.length; j++) if (GROUPS[i].items[j][0] === g) return GROUPS[i].items[j][1]; return g; }
   // The name follows the neck pick on tops: a tee with a polo collar is a polo.
