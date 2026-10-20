@@ -133,6 +133,9 @@
   .lhead, .pmhead { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 16px 8px; max-width: 900px; width: 100%; margin: 0 auto; }
   .lhead h2 { margin: 0; font-size: 1rem; letter-spacing: .08em; text-transform: uppercase; }
   .lclose, .pmhead button { font: inherit; font-weight: 900; background: var(--red); color: #fff; border: none; border-radius: 999px; padding: 10px 18px; cursor: pointer; }
+  .pmsides { display: flex; gap: 8px; padding: 0 16px 8px; max-width: 900px; width: 100%; margin: 0 auto; }
+  .pmsides .chip { flex: 1; }
+  .pmsub { display: block; font-size: .74rem; opacity: .7; font-weight: 600; }
   .ltabs { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding: 2px 16px 10px; max-width: 900px; width: 100%; margin: 0 auto; }
   .ltabs::-webkit-scrollbar { display: none; }
   .ltabs button { flex: none; font: inherit; font-size: 0.85rem; font-weight: 800; border: 1.5px solid var(--ink); background: #fff; color: var(--ink); border-radius: 999px; padding: 8px 14px; cursor: pointer; white-space: nowrap; }
@@ -417,6 +420,7 @@
 
 <div class="pm" id="pm" hidden role="dialog" aria-modal="true" aria-label="Measure a piece you own">
   <div class="pmhead"><b>Measure your <span id="pmWhat"></span></b><button type="button" id="pmClose">Close</button></div>
+  <div class="pmsides chips" id="pmSides"><button type="button" class="chip" data-s="front" aria-pressed="true">Front</button><button type="button" class="chip" data-s="back" aria-pressed="false">Back</button></div>
   <div class="pmintro" id="pmIntro">
     <svg class="pmfig" viewBox="0 0 320 170" role="img" aria-label="A shirt laid flat with a sheet of paper next to it, photographed from straight above">
       <rect width="320" height="170" fill="#d9d4c7"/>
@@ -427,6 +431,7 @@
       <path d="M243 66 L243 88" stroke="#1a1a1a" stroke-width="2" stroke-dasharray="4 3"/>
       <text x="230" y="167" font-size="9" font-weight="700" fill="#1a1a1a" font-family="Helvetica,Arial,sans-serif">printer paper</text>
     </svg>
+    <p class="meta" id="pmSideNote"></p>
     <ol class="pmsteps">
       <li><b>Lay it flat.</b> Floor or a big table. Smooth it out with your hands, no stretching. Button and zip it. Lay the sleeves or legs out flat.</li>
       <li><b>Pick a background.</b> Dark piece on a light floor or sheet, light piece on a dark one, so every edge is easy to see.</li>
@@ -435,7 +440,7 @@
       <li><b>Drag the dots.</b> Blue dots on the paper corners, red dots on the garment. A magnifier pops up while you drag.</li>
     </ol>
     <p class="meta">Expect it to be within about 1/4 to 1/2 in. Check one number with a tape measure before you cut fabric.</p>
-    <label class="btn" for="pmFile" style="display:block">Choose or take a photo</label>
+    <label class="btn" for="pmFile" id="pmFileLbl" style="display:block">Choose or take the front photo</label>
     <input type="file" id="pmFile" accept="image/*" class="hidefile">
   </div>
   <div class="pmwork" id="pmWork" hidden>
@@ -2674,7 +2679,9 @@
   // =====================================================================
   // MEASURE A PIECE YOU OWN: a sheet of paper in the photo is the ruler
   // =====================================================================
-  var PM = { img: null, paper: 'letter', corners: null, pts: null, drag: -1, loupe: null, scale: 1, ox: 0, oy: 0, contrast: false };
+  var PM = { img: null, paper: 'letter', corners: null, pts: null, drag: -1, loupe: null, scale: 1, ox: 0, oy: 0, contrast: false, side: 'front', stash: {} };
+  // Front and back each keep their own photo, paper corners and dots. PM always holds the side on screen.
+  var SIDE_KEYS = ['img', 'zoom', 'cx', 'cy', 'corners', 'pts', 'fam'];
   var PM_POINTS = {
     tops: [['chL', 'Armpit, left side'], ['chR', 'Armpit, right side'], ['hps', 'High point shoulder'], ['hem', 'Bottom edge, straight below'], ['shL', 'Shoulder point, left'], ['shR', 'Shoulder point, right']],
     pants: [['wL', 'Waistband top, left'], ['wR', 'Waistband top, right'], ['hL', 'Hip, left edge'], ['hR', 'Hip, right edge'], ['top', 'Top of waistband, center'], ['cr', 'Crotch point'], ['hem', 'Inside leg at the hem']],
@@ -2695,8 +2702,8 @@
     var h = b.map(function (v, i) { return v / A[i][i]; }); h.push(1); return h;
   }
   function hmap(h, p) { var w = h[6] * p[0] + h[7] * p[1] + 1; return [(h[0] * p[0] + h[1] * p[1] + h[2]) / w, (h[3] * p[0] + h[4] * p[1] + h[5]) / w]; }
-  function pmH() {
-    var c = PM.corners; if (!c) return null;
+  function pmH(S) {
+    var c = (S || PM).corners; if (!c) return null;
     var cx = 0, cy = 0; c.forEach(function (p) { cx += p[0] / 4; cy += p[1] / 4; });
     var o = c.slice().sort(function (a, b) { return Math.atan2(a[1] - cy, a[0] - cx) - Math.atan2(b[1] - cy, b[0] - cx); }); // clockwise on screen, starting top left-ish
     var start = 0, best = 1e18; o.forEach(function (p, i) { var s = p[0] + p[1]; if (s < best) { best = s; start = i; } }); o = o.slice(start).concat(o.slice(0, start));
@@ -2705,14 +2712,37 @@
     return homography(o, dst);
   }
   function pmDist(h, a, b) { return dist(hmap(h, a), hmap(h, b)); }
-  function pmResults() {
-    var h = pmH(), P = PM.pts, fam = famOf(state.g); if (!h || !P) return null;
+  function pmResults(S) {
+    var h = pmH(S), P = (S || PM).pts, fam = famOf(state.g); if (!h || !P) return null;
     var r = {};
     if (fam === 'tops') { r.chest = pmDist(h, P.chL, P.chR); r.length = pmDist(h, P.hps, P.hem); r.across = pmDist(h, P.shL, P.shR); }
     else if (fam === 'pants') { r.waistFlat = pmDist(h, P.wL, P.wR); r.hipFlat = pmDist(h, P.hL, P.hR); r.crotchDepth = pmDist(h, P.top, P.cr); r.inseam = pmDist(h, P.cr, P.hem); }
     else if (fam === 'hats') { r.flat = pmDist(h, P.bL, P.bR); }
     else { var a = hmap(h, P.tL), b = hmap(h, P.tR), c = hmap(h, P.bot), v = norm([b[0] - a[0], b[1] - a[1]]); r.width = dist(a, b); r.height = Math.abs((c[0] - a[0]) * -v[1] + (c[1] - a[1]) * v[0]); }
     return r;
+  }
+  // Both photos: average each number. Returns { r: averages, f: front, b: back } (f or b can be null).
+  function pmCombined() {
+    var fam = famOf(state.g), ok = function (S) { return S && S.img && S.corners && S.pts && S.fam === fam; };
+    var f = PM.side === 'front' ? (PM.img ? pmResults() : null) : (ok(PM.stash.front) ? pmResults(PM.stash.front) : null);
+    var b = PM.side === 'back' ? (PM.img ? pmResults() : null) : (ok(PM.stash.back) ? pmResults(PM.stash.back) : null);
+    var r = null;
+    if (f && b) { r = {}; Object.keys(f).forEach(function (k) { r[k] = (f[k] + b[k]) / 2; }); } else r = f || b;
+    return { r: r, f: f, b: b };
+  }
+  function pmSwitch(name) {
+    if (name === PM.side) return;
+    var o = {}; SIDE_KEYS.forEach(function (k) { o[k] = PM[k]; }); PM.stash[PM.side] = o;
+    var n = PM.stash[name] || { img: null, zoom: 1, cx: null, cy: null, corners: null, pts: null, fam: null };
+    SIDE_KEYS.forEach(function (k) { PM[k] = n[k]; }); PM.side = name; pmShow();
+  }
+  function pmShow() {
+    var has = { front: PM.side === 'front' ? !!PM.img : !!(PM.stash.front && PM.stash.front.img), back: PM.side === 'back' ? !!PM.img : !!(PM.stash.back && PM.stash.back.img) };
+    $('pmSides').querySelectorAll('[data-s]').forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.s === PM.side)); b.textContent = (b.dataset.s === 'front' ? 'Front' : 'Back') + (has[b.dataset.s] ? ' \u2713' : ''); });
+    $('pmIntro').hidden = !!PM.img; $('pmWork').hidden = !PM.img;
+    $('pmFileLbl').textContent = 'Choose or take the ' + PM.side + ' photo';
+    $('pmSideNote').textContent = PM.side === 'front' ? 'Start with the front. The back photo is next, and we average the two so the numbers are more exact.' : 'Now flip it over. Same spot, same sheet of paper, same straight down shot. The back is optional, skip it with Use these numbers.';
+    if (PM.img) { pmReset(false); pmFit(); pmDraw(); }
   }
   var PM_LABEL = { chest: 'Chest, flat (armpit to armpit)', length: 'Length from high point shoulder', across: 'Across shoulder', waistFlat: 'Waist, flat', hipFlat: 'Hip, flat', crotchDepth: 'Top of waistband to crotch', inseam: 'Inseam', flat: 'Width, flat', width: 'Width at top', height: 'Height' };
   // Turn garment numbers into the body numbers that make the same garment with the fit you picked
@@ -2728,8 +2758,7 @@
   }
   function pmOpen() {
     $('pm').hidden = false; document.documentElement.classList.add('focus-open');
-    $('pmIntro').hidden = !!PM.img; $('pmWork').hidden = !PM.img; $('pmWhat').textContent = nameOf(state.g);
-    if (PM.img) { pmReset(false); pmFit(); pmDraw(); }
+    $('pmWhat').textContent = nameOf(state.g); pmShow();
   }
   function pmClose() { $('pm').hidden = true; document.documentElement.classList.remove('focus-open'); }
   function pmReset(all) {
@@ -2769,12 +2798,17 @@
     g.beginPath(); g.arc(cx, cy, R, 0, 6.2832); g.lineWidth = 3 * d; g.strokeStyle = '#fff'; g.stroke();
   }
   function pmList() {
-    var r = pmResults(), box = $('pmList'); box.innerHTML = '';
+    var C = pmCombined(), r = C.r, box = $('pmList'); box.innerHTML = '';
     var fam = famOf(state.g);
     PM_POINTS[fam].forEach(function (p, i) { var li = document.createElement('div'); li.className = 'pmkey'; li.innerHTML = '<b>' + String.fromCharCode(97 + i) + '</b> '; li.appendChild(document.createTextNode(p[1])); box.appendChild(li); });
     var out = $('pmOut'); out.innerHTML = '';
     if (!r) return;
-    Object.keys(r).forEach(function (k) { var row = document.createElement('div'); row.className = 'pmrow'; row.innerHTML = '<span></span><b></b>'; row.firstChild.textContent = PM_LABEL[k]; row.lastChild.textContent = fv(r[k]) + ' ' + unitName(); out.appendChild(row); });
+    Object.keys(r).forEach(function (k) {
+      var row = document.createElement('div'); row.className = 'pmrow'; row.innerHTML = '<span></span><b></b>'; row.firstChild.textContent = PM_LABEL[k]; row.lastChild.textContent = fv(r[k]) + ' ' + unitName();
+      if (C.f && C.b) { var sub = document.createElement('span'); sub.className = 'pmsub'; sub.textContent = 'front ' + fv(C.f[k]) + ', back ' + fv(C.b[k]) + (Math.abs(C.f[k] - C.b[k]) > 0.5 ? ' (far apart, check the dots)' : ''); row.firstChild.appendChild(sub); }
+      out.appendChild(row);
+    });
+    if (C.f && C.b) { var n = document.createElement('p'); n.className = 'meta'; n.textContent = 'Using the average of front and back.'; out.appendChild(n); } else if (r) { var n2 = document.createElement('p'); n2.className = 'meta'; n2.textContent = 'Using the ' + (C.f ? 'front' : 'back') + ' only. Tap ' + (C.f ? 'Back' : 'Front') + ' on top to add the other side.'; out.appendChild(n2); }
   }
   (function () {
     var cv = $('pmCanvas'), ptrs = {}, pinch = null;
@@ -2803,18 +2837,19 @@
     cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
     $('pmFile').addEventListener('change', function (e) {
       var f = e.target.files[0]; if (!f) return; var im = new Image();
-      im.onload = function () { var k = Math.min(1, 2400 / Math.max(im.width, im.height)), c = document.createElement('canvas'); c.width = Math.round(im.width * k); c.height = Math.round(im.height * k); c.getContext('2d').drawImage(im, 0, 0, c.width, c.height); URL.revokeObjectURL(im.src); PM.img = c; PM.zoom = 1; PM.cx = PM.cy = null; pmReset(true); $('pmIntro').hidden = true; $('pmWork').hidden = false; document.querySelector('.pmpanel').scrollTop = 0; requestAnimationFrame(function () { pmFit(); pmDraw(); }); };
+      im.onload = function () { var k = Math.min(1, 2400 / Math.max(im.width, im.height)), c = document.createElement('canvas'); c.width = Math.round(im.width * k); c.height = Math.round(im.height * k); c.getContext('2d').drawImage(im, 0, 0, c.width, c.height); URL.revokeObjectURL(im.src); PM.img = c; PM.zoom = 1; PM.cx = PM.cy = null; pmReset(true); pmShow(); document.querySelector('.pmpanel').scrollTop = 0; };
       im.onerror = function () { alert('That photo would not open. Try a JPG or PNG.'); }; im.src = URL.createObjectURL(f);
     });
     $('measureBtn').onclick = pmOpen; $('pmClose').onclick = pmClose;
+    $('pmSides').querySelectorAll('[data-s]').forEach(function (b) { b.onclick = function () { pmSwitch(b.dataset.s); }; });
     $('pmNew').onclick = function () { $('pmFile').value = ''; $('pmFile').click(); };
     $('pmContrast').onclick = function () { PM.contrast = !PM.contrast; $('pmCanvas').style.filter = PM.contrast ? 'contrast(1.7) saturate(0.4)' : ''; this.setAttribute('aria-pressed', String(PM.contrast)); };
     $('pmFitBtn').onclick = function () { PM.zoom = 1; PM.cx = PM.cy = null; pmFit(); pmDraw(); };
     $('pmPaper').querySelectorAll('[data-v]').forEach(function (b) { b.onclick = function () { PM.paper = b.dataset.v; $('pmPaper').querySelectorAll('[data-v]').forEach(function (o) { o.setAttribute('aria-pressed', String(o === b)); }); if (PM.img) pmDraw(); }; });
-    $('pmUse').onclick = function () { var r = pmResults(); if (!r) return; pmApply(r); pmClose(); var msg = $('pmDone'); msg.hidden = false; msg.textContent = 'Done. Your ' + nameOf(state.g).toLowerCase() + ' pattern and tech pack now come out the same size as the piece you measured, with the ' + (famOf(state.g) === 'tops' || famOf(state.g) === 'pants' ? state.fit + ' fit you picked' : 'style you picked') + '. Check one number with a tape measure before you cut fabric.'; if (window.nocivSteps) window.nocivSteps.show(1, true); };
+    $('pmUse').onclick = function () { var r = pmCombined().r; if (!r) return; pmApply(r); pmClose(); var msg = $('pmDone'); msg.hidden = false; msg.textContent = 'Done. Your ' + nameOf(state.g).toLowerCase() + ' pattern and tech pack now come out the same size as the piece you measured, with the ' + (famOf(state.g) === 'tops' || famOf(state.g) === 'pants' ? state.fit + ' fit you picked' : 'style you picked') + '. Check one number with a tape measure before you cut fabric.'; if (window.nocivSteps) window.nocivSteps.show(1, true); };
     window.addEventListener('resize', function () { if (!$('pm').hidden && PM.img) { pmFit(); pmDraw(); } });
   })();
-  window.__pm = { PM: PM, results: pmResults, apply: pmApply, H: pmH, map: hmap, draw: function () { pmFit(); pmDraw(); } };
+  window.__pm = { PM: PM, combined: pmCombined, switchSide: pmSwitch, results: pmResults, apply: pmApply, H: pmH, map: hmap, draw: function () { pmFit(); pmDraw(); } };
 
   // ---------- Learn guide ----------
   (function () {
