@@ -406,6 +406,11 @@
       <button type="button" class="btn" id="make">Make my files</button>
       <p class="meta" id="working" hidden>Making your files...</p>
       <div class="files" id="files"></div>
+      <div class="group-name">Share what you made</div>
+      <p class="meta">Shares a picture of your garment drawing (front and back, in your colors). No hashtags, no tracking.</p>
+      <label class="meta" style="display:flex;gap:10px;align-items:center;font-weight:700;margin:8px 0"><input type="checkbox" id="shareMark" checked style="width:22px;height:22px"> Add "Made with nociv.co" and the link</label>
+      <button type="button" class="btn" id="shareBtn" style="background:var(--ink)">Share my design</button>
+      <p class="meta" id="shareMsg" aria-live="polite"></p>
       <div class="tip">Print at <b>100%</b> or <b>Actual size</b>, never "Fit to page". Then measure the test square on page 1. If it is not exactly 2 inches, the printer shrank it.</div>
     </section>
 
@@ -1962,6 +1967,45 @@
     if (!f.url) f.url = URL.createObjectURL(f.blob);
     var a = document.createElement('a'); a.href = f.url; a.download = f.name; document.body.appendChild(a); a.click(); a.remove();
   }
+
+  // Share what you made: phone share sheet with a picture of the front and back flats, optional "Made with nociv.co" line. Falls back to a download and a copied link.
+  (function () {
+    var KEY = 'nocivShareMark', mk = $('shareMark'), msg = $('shareMsg');
+    try { if (localStorage.getItem(KEY) === '0') mk.checked = false; } catch (e) {}
+    mk.addEventListener('change', function () { try { localStorage.setItem(KEY, mk.checked ? '1' : '0'); } catch (e) {} });
+    function flatsPng() {
+      return new Promise(function (resolve, reject) {
+        var svg = flatsFileSVG(current.res, true), m = svg.match(/viewBox="[-\d.]+ [-\d.]+ ([\d.]+) ([\d.]+)"/);
+        if (!m) { reject(new Error('no size')); return; }
+        var ar = parseFloat(m[2]) / parseFloat(m[1]), W = 1400, pad = 70, iw = W - pad * 2, ih = Math.round(iw * ar), c = document.createElement('canvas');
+        c.width = W; c.height = ih + pad * 2 + 40;
+        var url = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml' })), im = new Image();
+        im.onload = function () {
+          var g = c.getContext('2d'); g.fillStyle = '#e4e0d6'; g.fillRect(0, 0, c.width, c.height); g.drawImage(im, pad, pad, iw, ih);
+          g.fillStyle = '#111'; g.font = '700 28px system-ui, sans-serif'; g.textAlign = 'left'; g.fillText(styleTitle(), pad, c.height - 34);
+          URL.revokeObjectURL(url); c.toBlob(function (b) { c.width = c.height = 0; b ? resolve(b) : reject(new Error('blob')); }, 'image/png');
+        };
+        im.onerror = function () { URL.revokeObjectURL(url); reject(new Error('image')); };
+        im.src = url;
+      });
+    }
+    $('shareBtn').addEventListener('click', async function () {
+      var btn = this; btn.disabled = true; msg.textContent = 'Getting it ready...';
+      try {
+        var blob = await flatsPng(), slug = (state.tp.style || nameOf(state.g)).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || state.g;
+        var name = 'nociv-' + slug + '-design.png', file = new File([blob], name, { type: 'image/png' }), text = 'Made with nociv.co https://nociv.co';
+        var data = { files: [file] }; if (mk.checked) data.text = text;
+        if (navigator.canShare && navigator.canShare(data)) { await navigator.share(data).catch(function () {}); msg.textContent = ''; }
+        else if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file] }).catch(function () {}); msg.textContent = ''; }
+        else {
+          var u = URL.createObjectURL(blob), a = document.createElement('a'); a.href = u; a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(function () { URL.revokeObjectURL(u); }, 4000);
+          var copied = false; if (mk.checked) { try { await navigator.clipboard.writeText(text); copied = true; } catch (e) {} }
+          msg.textContent = 'Saved your picture.' + (copied ? ' The link is copied, paste it where you share.' : '');
+        }
+      } catch (e) { msg.textContent = 'That did not work. Try Make my files instead.'; if (window.console) console.error(e); }
+      btn.disabled = false;
+    });
+  })();
 
   function saveAll() {
     var fl = files.map(function (f) { return new File([f.blob], f.name, { type: f.type || 'application/pdf' }); });
