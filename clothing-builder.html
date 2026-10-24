@@ -369,17 +369,11 @@
       </div>
       <div class="group-name">Main label</div><div class="chips" id="tpLabel"></div>
       <div class="group-name">Care label</div><div class="chips" id="tpCare"></div>
-      <div class="group-name">Print or embroidery</div><div class="chips" id="tpPrint"></div>
-      <div id="tpPrintBox">
-        <div class="fields three" style="margin-top:10px">
-          <div class="field"><label for="tp_printW">Width</label><div class="row"><input id="tp_printW" type="number" inputmode="decimal" step="0.25"><span class="unit">in</span></div></div>
-          <div class="field"><label for="tp_printH">Height</label><div class="row"><input id="tp_printH" type="number" inputmode="decimal" step="0.25"><span class="unit">in</span></div></div>
-          <div class="field"><label for="tp_printFrom" id="tpFromLabel">From the top</label><div class="row"><input id="tp_printFrom" type="number" inputmode="decimal" step="0.25"><span class="unit">in</span></div></div>
-        </div>
-        <div class="group-name">Method</div><div class="chips" id="tpMethod"></div>
-        <label class="filebtn" for="tpArt">Add your artwork (optional)</label><input id="tpArt" type="file" accept="image/*" class="hidefile"><span class="meta" id="tpArtName">Shows on the flats and the placement page.</span>
-        <p class="meta">Starting points only. Check them on a real garment, every body and every size is different.</p>
-      </div>
+      <div class="group-name">Print or embroidery</div>
+      <p class="meta">Add a placement for each spot that gets art. Front and back each get their own artwork, size and method.</p>
+      <div id="tpPlaces"></div>
+      <button type="button" class="btn" id="tpAddPlace" style="margin-top:10px">+ Add another placement (back, left chest...)</button>
+      <p class="meta">Starting points only. Check them on a real garment, every body and every size is different.</p>
       <details class="tpmore"><summary>Tolerances and sample size</summary>
         <div class="field" style="margin-top:10px"><label for="tpSample">Sample size name</label><div class="row"><input id="tpSample" type="text"></div><p>The size your measurements make. Leave it blank and we pick the closest size.</p></div>
         <div class="group-name">Tolerance (+/-) for each measurement</div>
@@ -1975,7 +1969,7 @@
     mk.addEventListener('change', function () { try { localStorage.setItem(KEY, mk.checked ? '1' : '0'); } catch (e) {} });
     function flatsPng() {
       return new Promise(function (resolve, reject) {
-        var svg = flatsFileSVG(current.res, true), m = svg.match(/viewBox="[-\d.]+ [-\d.]+ ([\d.]+) ([\d.]+)"/);
+        var svg = flatsFileSVG(current.res, true, true), m = svg.match(/viewBox="[-\d.]+ [-\d.]+ ([\d.]+) ([\d.]+)"/);
         if (!m) { reject(new Error('no size')); return; }
         var ar = parseFloat(m[2]) / parseFloat(m[1]), W = 1400, pad = 70, iw = W - pad * 2, ih = Math.round(iw * ar), c = document.createElement('canvas');
         c.width = W; c.height = ih + pad * 2 + 40;
@@ -2029,7 +2023,10 @@
   // =====================================================================
   var TP_DEF = { style: '', num: '', season: '', brand: '', colorName: 'White', color: '#f4f2ec', fabric: '', content: '', weight: '', label: 'woven', care: 'side', print: 'none', printW: 10, printH: 12, printFrom: 3, method: 'screen', sampleName: '', notes: '', tol: {} };
   state.tp = Object.assign({}, TP_DEF, (function () { try { var t = JSON.parse(localStorage.getItem('nocivCutSewTP') || 'null'); return t || {}; } catch (e) { return {}; } })());
-  var tpArt = null; // artwork for the placement page (kept in memory only)
+  // Placements: each has its own spot, size, method and artwork (so the back can have art too). Old saved designs carry over as placement 1.
+  if (!Array.isArray(state.tp.places) || !state.tp.places.length) state.tp.places = [{ print: state.tp.print || 'none', printW: state.tp.printW || 10, printH: state.tp.printH || 12, printFrom: state.tp.printFrom || 3, method: state.tp.method || 'screen' }];
+  var tpArts = []; // artwork for each placement (kept in memory only)
+  function activePlaces() { var out = []; state.tp.places.forEach(function (pl, i) { if (pl.print && pl.print !== 'none') out.push(Object.assign({ i: i }, pl)); }); return out; }
   function saveTP() { try { localStorage.setItem('nocivCutSewTP', JSON.stringify(state.tp)); } catch (e) {} }
   var FAB = {
     tops: ['Cotton jersey', '100% cotton', '180 GSM'],
@@ -2328,14 +2325,14 @@
       if (c > 0) [1, -1].forEach(function (sg) { it.push(seg([[sg * W / 2, H - c], [sg * (W / 2 - c), H]], 'stitch')); });
     }
     // print or embroidery box
-    var pr = printBox(sp, side); if (pr) it.push({ k: 'print', r: pr });
+    activePlaces().forEach(function (pl) { var pr = printBox(sp, side, pl); if (pr) it.push({ k: 'print', r: pr, i: pl.i }); });
     return { items: it, G: G };
   }
   // Where the artwork sits on this flat, in inches. null if nothing here.
-  function printBox(sp, side) {
-    var p = state.tp.print, w = +state.tp.printW || 0, h = +state.tp.printH || 0, fr = +state.tp.printFrom || 0;
+  function printBox(sp, side, pl) {
+    var p = pl.print, w = +pl.printW || 0, h = +pl.printH || 0, fr = +pl.printFrom || 0;
     if (!p || p === 'none' || !w || !h) return null;
-    var front = { center: 1, left: 1, full: 1, leftleg: 1, frontc: 1 }[p], wantBack = { upper: 1, neck: 1, bpocket: 1 }[p];
+    var front = { center: 1, left: 1, full: 1, leftleg: 1, frontc: 1 }[p], wantBack = { upper: 1, neck: 1, bpocket: 1, fullback: 1 }[p];
     if ((side === 'back') !== !!wantBack) return null;
     if (sp.fam === 'tops') {
       if (p === 'left') return { x: 2.75, y: fr, w: w, h: h };
@@ -2362,7 +2359,7 @@
     items.forEach(function (i) {
       if (i.k === 'p') out.push('<path d="' + d(i.pts, i.closed) + '" fill="' + (i.fill ? F[i.fill] : 'none') + '" stroke="' + ink + '" stroke-width="' + pw(i.st) + '"' + (i.st === 'stitch' ? ' stroke-dasharray="' + (o.screen ? '3 2' : '0.06 0.04') + '"' : '') + ' stroke-linejoin="round"' + ns + '/>');
       else if (i.k === 'c') out.push('<circle cx="' + i.c[0] + '" cy="' + i.c[1] + '" r="' + i.r + '" fill="' + F[i.fill || 'body'] + '" stroke="' + ink + '" stroke-width="' + pw(i.st) + '"' + ns + '/>');
-      else if (i.k === 'print') out.push('<rect x="' + i.r.x + '" y="' + i.r.y + '" width="' + i.r.w + '" height="' + i.r.h + '" fill="' + (o.color ? 'rgba(255,255,255,.18)' : 'rgba(200,65,47,.10)') + '" stroke="#c8412f" stroke-width="' + pw('seam') + '" stroke-dasharray="' + (o.screen ? '4 3' : '0.1 0.06') + '"' + ns + '/>' + (o.art ? '<image href="' + o.art + '" x="' + i.r.x + '" y="' + i.r.y + '" width="' + i.r.w + '" height="' + i.r.h + '" preserveAspectRatio="xMidYMid meet"/>' : ''));
+      else if (i.k === 'print') out.push('<rect x="' + i.r.x + '" y="' + i.r.y + '" width="' + i.r.w + '" height="' + i.r.h + '" fill="' + (o.color ? 'rgba(255,255,255,.18)' : 'rgba(200,65,47,.10)') + '" stroke="#c8412f" stroke-width="' + pw('seam') + '" stroke-dasharray="' + (o.screen ? '4 3' : '0.1 0.06') + '"' + ns + '/>' + ((o.arts && o.arts[i.i]) ? '<image href="' + o.arts[i.i] + '" x="' + i.r.x + '" y="' + i.r.y + '" width="' + i.r.w + '" height="' + i.r.h + '" preserveAspectRatio="xMidYMid meet"/>' : ''));
     });
     return out.join('');
   }
@@ -2386,17 +2383,17 @@
     var T = tpBundle(res), bf = bboxItems(T.F.items), bb = bboxItems(T.B.items), gap = 4, pad = 2.5;
     var dx = -bf[0] + pad, dxB = dx + bf[2] + gap - bb[0], W = dxB + bb[2] + pad, top0 = Math.min(bf[1], bb[1]) - pad, H0 = Math.max(bf[3], bb[3]) + pad - top0, extra = H0 * 0.3, top = top0 - extra, H = H0 + extra;
     var col = state.tp.color, svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 ' + top + ' ' + W + ' ' + H + '" preserveAspectRatio="xMidYMid meet">';
-    svg += '<g transform="translate(' + dx + ' 0)">' + itemsSVG(T.F.items, { screen: 1, color: col, art: tpArt }) + (state.flatDims !== false ? dimSVG(T.poms, 'front') : '') + '</g>';
-    svg += '<g transform="translate(' + dxB + ' 0)">' + itemsSVG(T.B.items, { screen: 1, color: col, art: tpArt }) + (state.flatDims !== false ? dimSVG(T.poms, 'back') : '') + '</g>';
+    svg += '<g transform="translate(' + dx + ' 0)">' + itemsSVG(T.F.items, { screen: 1, color: col, arts: tpArts }) + (state.flatDims !== false ? dimSVG(T.poms, 'front') : '') + '</g>';
+    svg += '<g transform="translate(' + dxB + ' 0)">' + itemsSVG(T.B.items, { screen: 1, color: col, arts: tpArts }) + (state.flatDims !== false ? dimSVG(T.poms, 'back') : '') + '</g>';
     var lab = function (x, str) { return '<text x="' + x + '" y="' + (top + 1.4) + '" font-size="0.9" font-weight="800" font-family="SF Mono,Menlo,Consolas,monospace" text-anchor="middle" fill="#0F0F0F">' + str + '</text>'; };
     svg += lab(dx + (bf[0] + bf[2]) / 2, 'FRONT') + lab(dxB + (bb[0] + bb[2]) / 2, 'BACK') + '</svg>';
     var host = document.createElement('div'); host.innerHTML = svg; return host.firstChild;
   }
   // Illustrator / Inkscape file: true scale, 1 unit = 1 inch
-  function flatsFileSVG(res, colored) {
+  function flatsFileSVG(res, colored, withArt) {
     var T = tpBundle(res), bf = bboxItems(T.F.items), bb = bboxItems(T.B.items), gap = 4, pad = 1;
     var dx = -bf[0] + pad, dxB = dx + bf[2] + gap - bb[0], top = Math.min(bf[1], bb[1]) - pad, W = dxB + bb[2] + pad, H = Math.max(bf[3], bb[3]) + pad - top;
-    var o = { color: colored ? state.tp.color : null };
+    var o = { color: colored ? state.tp.color : null, arts: withArt ? tpArts : null };
     return '<svg xmlns="http://www.w3.org/2000/svg" width="' + W.toFixed(2) + 'in" height="' + H.toFixed(2) + 'in" viewBox="0 ' + top.toFixed(3) + ' ' + W.toFixed(3) + ' ' + H.toFixed(3) + '"><title>' + escX(styleTitle()) + ' tech flats, true scale</title><g id="front" transform="translate(' + dx + ' 0)">' + itemsSVG(T.F.items, o) + '</g><g id="back" transform="translate(' + dxB + ' 0)">' + itemsSVG(T.B.items, o) + '</g></svg>';
   }
   function escX(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
@@ -2431,9 +2428,9 @@
       } else if (i.k === 'c') {
         var c = i.c, r = i.r, q = 0.5523 * r, P = function (x, y) { return n2(ox + x * k) + ' ' + n2(oy - y * k); };
         out.push(hexRGB(ink) + ' RG ' + PEN[i.st] + ' w [] 0 d ' + hexRGB(F[i.fill || 'body']) + ' rg ' + P(c[0] + r, c[1]) + ' m ' + P(c[0] + r, c[1] + q) + ' ' + P(c[0] + q, c[1] + r) + ' ' + P(c[0], c[1] + r) + ' c ' + P(c[0] - q, c[1] + r) + ' ' + P(c[0] - r, c[1] + q) + ' ' + P(c[0] - r, c[1]) + ' c ' + P(c[0] - r, c[1] - q) + ' ' + P(c[0] - q, c[1] - r) + ' ' + P(c[0], c[1] - r) + ' c ' + P(c[0] + q, c[1] - r) + ' ' + P(c[0] + r, c[1] - q) + ' ' + P(c[0] + r, c[1]) + ' c B');
-      } else if (i.k === 'print' && !o.noPrint) {
-        var R = i.r;
-        if (o.img) { var iw = o.img.w, ih = o.img.h, s2 = Math.min(R.w / iw, R.h / ih), dw = iw * s2, dh = ih * s2, x0 = R.x + (R.w - dw) / 2, y0 = R.y + (R.h - dh) / 2; out.push('q ' + n2(dw * k) + ' 0 0 ' + n2(dh * k) + ' ' + n2(ox + x0 * k) + ' ' + n2(oy - (y0 + dh) * k) + ' cm /Im1 Do Q'); }
+      } else if (i.k === 'print' && !o.noPrint && (o.only == null || o.only === i.i)) {
+        var R = i.r, im1 = o.imgs && o.imgs[i.i];
+        if (im1) { var iw = im1.w, ih = im1.h, s2 = Math.min(R.w / iw, R.h / ih), dw = iw * s2, dh = ih * s2, x0 = R.x + (R.w - dw) / 2, y0 = R.y + (R.h - dh) / 2; out.push('q ' + n2(dw * k) + ' 0 0 ' + n2(dh * k) + ' ' + n2(ox + x0 * k) + ' ' + n2(oy - (y0 + dh) * k) + ' cm /Im' + (i.i + 1) + ' Do Q'); }
         out.push('0.784 0.255 0.184 RG 0.8 w [3 2] 0 d ' + X([R.x, R.y + R.h]) + ' ' + n2(R.w * k) + ' ' + n2(R.h * k) + ' re S');
       }
     });
@@ -2460,7 +2457,7 @@
   function makePdfImg(pages) {
     var enc = new TextEncoder(), parts = [], offs = [], len = 0;
     function add(x) { var b = typeof x === 'string' ? enc.encode(x) : x; parts.push(b); len += b.length; }
-    var n = 4; pages.forEach(function (p) { p._pg = ++n; p._ct = ++n; if (p.img) p._im = ++n; });
+    var n = 4; pages.forEach(function (p) { p._pg = ++n; p._ct = ++n; p._ims = []; (p.imgs || []).forEach(function (im, k) { if (im) p._ims.push({ k: k, o: ++n, im: im }); }); });
     add('%PDF-1.4\n');
     function obj(i, body) { offs[i] = len; add(i + ' 0 obj\n' + body + '\nendobj\n'); }
     obj(1, '<< /Type /Catalog /Pages 2 0 R >>');
@@ -2469,9 +2466,9 @@
     obj(4, '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>');
     pages.forEach(function (p) {
       var c = enc.encode(p.content);
-      obj(p._pg, '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ' + n2(p.w * 72) + ' ' + n2(p.h * 72) + '] /Resources << /Font << /F1 3 0 R /F2 4 0 R >>' + (p.img ? ' /XObject << /Im1 ' + p._im + ' 0 R >>' : '') + ' >> /Contents ' + p._ct + ' 0 R >>');
+      obj(p._pg, '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ' + n2(p.w * 72) + ' ' + n2(p.h * 72) + '] /Resources << /Font << /F1 3 0 R /F2 4 0 R >>' + (p._ims.length ? ' /XObject << ' + p._ims.map(function (q) { return '/Im' + (q.k + 1) + ' ' + q.o + ' 0 R'; }).join(' ') + ' >>' : '') + ' >> /Contents ' + p._ct + ' 0 R >>');
       obj(p._ct, '<< /Length ' + c.length + ' >>\nstream\n' + p.content + '\nendstream');
-      if (p.img) { offs[p._im] = len; add(p._im + ' 0 obj\n<< /Type /XObject /Subtype /Image /Width ' + p.img.pw + ' /Height ' + p.img.ph + ' /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ' + p.img.bytes.length + ' >>\nstream\n'); add(p.img.bytes); add('\nendstream\nendobj\n'); }
+      p._ims.forEach(function (q) { offs[q.o] = len; add(q.o + ' 0 obj\n<< /Type /XObject /Subtype /Image /Width ' + q.im.pw + ' /Height ' + q.im.ph + ' /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ' + q.im.bytes.length + ' >>\nstream\n'); add(q.im.bytes); add('\nendstream\nendobj\n'); });
     });
     var xref = len, x = 'xref\n0 ' + (n + 1) + '\n0000000000 65535 f \n';
     for (var i = 1; i <= n; i++) x += ('0000000000' + offs[i]).slice(-10) + ' 00000 n \n';
@@ -2512,10 +2509,10 @@
     } else {
       d.push('Two body panels' + (sp.depth ? ' with boxed corners (' + frac(sp.depth) + ' in gusset)' : '') + '.'); d.push('Two straps, 1 1/4 in finished, sewn in 3 in from each side seam, box X stitched.'); d.push('Top hem turned 1/2 in then 1 in, two rows of topstitching.'); if (sp.tpock) d.push('Inside patch pocket.');
     }
-    if (state.tp.print !== 'none') d.push(PRINT_NAMES[state.tp.print] + ' ' + METHOD_NAMES[state.tp.method].toLowerCase() + ', ' + frac(+state.tp.printW) + ' x ' + frac(+state.tp.printH) + ' in.');
+    activePlaces().forEach(function (pl) { d.push(PRINT_NAMES[pl.print] + ' ' + METHOD_NAMES[pl.method].toLowerCase() + ', ' + frac(+pl.printW) + ' x ' + frac(+pl.printH) + ' in.'); });
     return d;
   }
-  var PRINT_NAMES = { none: 'None', center: 'Center chest', left: 'Left chest', full: 'Full front', upper: 'Upper back', neck: 'Back neck', leftleg: 'Left leg', bpocket: 'Back pocket', frontc: 'Front center' };
+  var PRINT_NAMES = { none: 'None', center: 'Center chest', left: 'Left chest', full: 'Full front', upper: 'Upper back', fullback: 'Full back', neck: 'Back neck', leftleg: 'Left leg', bpocket: 'Back pocket', frontc: 'Front center' };
   var METHOD_NAMES = { screen: 'Screen print', emb: 'Embroidery', dtg: 'DTG print', dtf: 'DTF transfer' };
   function construction(sp) {
     var f = sp.fam, c = [];
@@ -2559,11 +2556,12 @@
     if (state.tp.label === 'woven') r.push(['Main label', 'Woven label', 'Your brand', f === 'pants' ? 'Inside back waistband, center' : 'Center back neck']);
     if (state.tp.label === 'printed') r.push(['Main label', 'Printed (tagless) heat transfer', 'Your brand', f === 'pants' ? 'Inside back waistband' : 'Inside center back neck']);
     r.push(['Care label', 'Fiber content, care, country of origin, RN or company name', 'White', state.tp.care === 'side' ? 'Wearer\'s left side seam, 3 in above the hem' : (f === 'pants' ? 'Inside back waistband' : 'Center back neck, under the main label')]);
-    if (state.tp.print !== 'none') r.push(['Artwork', METHOD_NAMES[state.tp.method], '', PRINT_NAMES[state.tp.print] + ', ' + frac(+state.tp.printW) + ' x ' + frac(+state.tp.printH) + ' in']);
+    activePlaces().forEach(function (pl) { r.push(['Artwork', METHOD_NAMES[pl.method], '', PRINT_NAMES[pl.print] + ', ' + frac(+pl.printW) + ' x ' + frac(+pl.printH) + ' in']); });
     return r;
   }
   // ---------- the pages ----------
-  function tpPages(res, img) {
+  function tpPages(res, imgs) {
+    imgs = imgs || [];
     var TB = tpBundle(res), sp = TB.sp, W = 11, H = 8.5, PW = W * 72, PH = H * 72, M = 36, pages = [], today = new Date().toISOString().slice(0, 10);
     var garment = nameOf(state.g) + (famOf(state.g) === 'tops' || famOf(state.g) === 'pants' ? ', ' + state.fit + ' fit' : '');
     function frame(title) {
@@ -2574,13 +2572,13 @@
       o.push('0.4 g ' + T(M, M - 14, 7, 'Made free at nociv.co   |   ' + garment + '   |   Units: ' + (state.units === 'cm' ? 'centimeters' : 'inches') + '   |   ' + today));
       return o;
     }
-    function done(o, imgUse) { pages.push({ w: W, h: H, content: o.join('\n'), img: imgUse ? img : null }); }
+    function done(o, imgUse) { pages.push({ w: W, h: H, content: o.join('\n'), imgs: imgUse ? (imgUse === true ? imgs : imgUse) : null }); }
     function cell(o, x, y, w, label, val) { o.push('0.42 g ' + T(x, y, 7, label.toUpperCase(), true)); wrapText(String(val || '-'), Math.floor(w / 5.2)).slice(0, 3).forEach(function (l, i) { o.push('0 g ' + T(x, y - 11 - i * 11, 9.5, l, i === 0)); }); }
     // 1. cover
     var o = frame('Cover'), col = state.tp.color;
     var fb = fitBox(TB.F.items, M + 10, M + 20, 340, PH - 2 * M - 70);
-    o.push(pdfDraw(TB.F.items, fb.ox, fb.oy, fb.k, { color: col, img: img }));
-    var bb2 = fitBox(TB.B.items, M + 360, M + 20, 120, 150); o.push(pdfDraw(TB.B.items, bb2.ox, bb2.oy, bb2.k, { color: col, img: img }));
+    o.push(pdfDraw(TB.F.items, fb.ox, fb.oy, fb.k, { color: col, imgs: imgs }));
+    var bb2 = fitBox(TB.B.items, M + 360, M + 20, 120, 150); o.push(pdfDraw(TB.B.items, bb2.ox, bb2.oy, bb2.k, { color: col, imgs: imgs }));
     o.push('0.4 g ' + T(M + 405, M + 12, 7, 'BACK', true));
     var x0 = PW - M - 215, y0 = PH - M - 52;
     [['Style', state.tp.style || nameOf(state.g)], ['Style number', state.tp.num], ['Season', state.tp.season], ['Brand', state.tp.brand], ['Garment', garment], ['Sample size', sampleName()], ['Fabric', tpVal('fabric') + ', ' + tpVal('content') + ', ' + tpVal('weight')], ['Colorway', state.tp.colorName + '  ' + col.toUpperCase()], ['Sizes', SIZES[famOf(state.g)] ? Object.keys(SIZES[famOf(state.g)]).join(' ') : 'One size'], ['Date', today]].forEach(function (r, i) { cell(o, x0, y0 - i * 42, 230, r[0], r[1]); });
@@ -2590,7 +2588,7 @@
     o = frame('Flats');
     var bw = (PW - 2 * M - 40) / 2, bh = PH - 2 * M - 170;
     var f1 = fitBox(TB.F.items, M + 10, M + 130, bw, bh), f2 = fitBox(TB.B.items, M + 30 + bw, M + 130, bw, bh);
-    o.push(pdfDraw(TB.F.items, f1.ox, f1.oy, f1.k, { noPrint: 0, img: img })); o.push(pdfDraw(TB.B.items, f2.ox, f2.oy, f2.k, { img: img }));
+    o.push(pdfDraw(TB.F.items, f1.ox, f1.oy, f1.k, { noPrint: 0, imgs: imgs })); o.push(pdfDraw(TB.B.items, f2.ox, f2.oy, f2.k, { imgs: imgs }));
     o.push('0 g ' + T(M + 10, PH - M - 40, 9, 'FRONT', true) + ' ' + T(M + 30 + bw, PH - M - 40, 9, 'BACK', true));
     var yy = M + 112; o.push('0 g ' + T(M + 10, yy, 9, 'DETAILS', true)); yy -= 13;
     details(sp).forEach(function (d, i) { wrapText((i + 1) + '. ' + d, 150).forEach(function (l) { o.push('0 g ' + T(M + 10, yy, 8.5, l)); yy -= 11; }); });
@@ -2647,15 +2645,19 @@
     STEPS[famOf(state.g)](Object.assign({ cut: state.g }, state.o)).slice(2).forEach(function (s, i) { wrapText(s, 150).forEach(function (l, j) { o.push('0 g ' + T(M + 6, cy, 8.5, (j ? '    ' : (i + 1) + '. ') + l)); cy -= 10.5; }); cy -= 2; });
     cy -= 6; o.push('0.3 g ' + T(M, cy, 7.5, 'Stitch types and stitches per inch are common industry starting points. Confirm with your factory, they may use different machines.'));
     done(o);
-    // 7. artwork placement
-    var side = { upper: 1, neck: 1, bpocket: 1 }[state.tp.print] ? 'back' : 'front', items = side === 'back' ? TB.B.items : TB.F.items, pr = printBox(sp, side);
-    if (pr) {
-      o = frame('Artwork placement');
-      var pf = fitBox(items, M + 10, M + 30, 430, PH - 2 * M - 80); o.push(pdfDraw(items, pf.ox, pf.oy, pf.k, { img: img }));
-      var px = PW - M - 260, py = PH - M - 60;
-      [['Placement', PRINT_NAMES[state.tp.print]], ['Method', METHOD_NAMES[state.tp.method]], ['Artwork size', frac(+state.tp.printW) + ' in wide x ' + frac(+state.tp.printH) + ' in tall'], ['Position', sp.fam === 'tops' ? (state.tp.print === 'left' ? 'Top edge ' + frac(+state.tp.printFrom) + ' in below the high point shoulder, left edge 2 3/4 in from center front (wearer\'s left chest)' : state.tp.print === 'neck' ? 'Top edge ' + frac(+state.tp.printFrom) + ' in below the back neck seam, centered' : 'Top edge ' + frac(+state.tp.printFrom) + ' in below the high point shoulder, centered on the garment') : 'Top edge ' + frac(+state.tp.printFrom) + ' in below the reference point shown, centered'], ['Artwork file', img ? 'Shown in the box. Send the full resolution file with this pack.' : 'Send the artwork file with this pack.']].forEach(function (r, i) { cell(o, px, py - i * 52, 260, r[0], r[1]); });
-      done(o, true);
-    }
+    // 7. artwork placement: one page for each placement, front or back
+    var places = activePlaces();
+    places.forEach(function (pl, n) {
+      var side = { upper: 1, neck: 1, bpocket: 1, fullback: 1 }[pl.print] ? 'back' : 'front', items = side === 'back' ? TB.B.items : TB.F.items, pr = printBox(sp, side, pl);
+      if (!pr) return;
+      o = frame('Artwork placement' + (places.length > 1 ? ' ' + (n + 1) + ' of ' + places.length : '') + ', ' + side);
+      var one = []; one[pl.i] = imgs[pl.i] || null;
+      var pf = fitBox(items, M + 10, M + 30, 430, PH - 2 * M - 80); o.push(pdfDraw(items, pf.ox, pf.oy, pf.k, { imgs: one, only: pl.i }));
+      var px = PW - M - 260, py = PH - M - 60, fr = frac(+pl.printFrom);
+      var pos = sp.fam === 'tops' ? (pl.print === 'left' ? 'Top edge ' + fr + ' in below the high point shoulder, left edge 2 3/4 in from center front (wearer\'s left chest)' : pl.print === 'neck' ? 'Top edge ' + fr + ' in below the back neck seam, centered' : 'Top edge ' + fr + ' in below the high point shoulder, centered on the garment') : 'Top edge ' + fr + ' in below the reference point shown, centered';
+      [['Placement', PRINT_NAMES[pl.print]], ['Method', METHOD_NAMES[pl.method]], ['Artwork size', frac(+pl.printW) + ' in wide x ' + frac(+pl.printH) + ' in tall'], ['Position', pos], ['Artwork file', imgs[pl.i] ? 'Shown in the box. Send the full resolution file with this pack.' : 'Send the artwork file with this pack.']].forEach(function (r, i) { cell(o, px, py - i * 52, 260, r[0], r[1]); });
+      done(o, one);
+    });
     // 8. notes + approvals
     o = frame('Notes + approvals'); var ny = PH - M - 50;
     o.push('0 g ' + T(M, ny, 9, 'NOTES FOR THE FACTORY', true)); ny -= 14;
@@ -2669,16 +2671,20 @@
   }
   // Artwork for the PDF: re-encode to JPEG on a white background
   function artForPdf(done2) {
-    if (!tpArt) return done2(null);
-    var im = new Image(); im.onload = function () {
-      var k = Math.min(1, 1600 / Math.max(im.width, im.height)), c = document.createElement('canvas'); c.width = Math.round(im.width * k); c.height = Math.round(im.height * k);
-      var g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); g.drawImage(im, 0, 0, c.width, c.height);
-      c.toBlob(function (b) { b.arrayBuffer().then(function (ab) { done2({ bytes: new Uint8Array(ab), pw: c.width, ph: c.height, w: c.width, h: c.height }); }); }, 'image/jpeg', 0.9);
-    }; im.onerror = function () { done2(null); }; im.src = tpArt;
+    var out = [], todo = 0, left = 0;
+    tpArts.forEach(function (src, i) {
+      if (!src) return; todo++; left++;
+      var im = new Image(); im.onload = function () {
+        var k = Math.min(1, 1600 / Math.max(im.width, im.height)), c = document.createElement('canvas'); c.width = Math.round(im.width * k); c.height = Math.round(im.height * k);
+        var g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); g.drawImage(im, 0, 0, c.width, c.height);
+        c.toBlob(function (b) { b.arrayBuffer().then(function (ab) { out[i] = { bytes: new Uint8Array(ab), pw: c.width, ph: c.height, w: c.width, h: c.height }; if (!--left) done2(out); }); }, 'image/jpeg', 0.9);
+      }; im.onerror = function () { out[i] = null; if (!--left) done2(out); }; im.src = src;
+    });
+    if (!todo) done2([]);
   }
   // ---------- Tech pack step UI ----------
   var PRINTS = {
-    tops: [['none', 'None'], ['center', 'Center chest', 10, 12, 3], ['left', 'Left chest', 3.5, 3.5, 7], ['full', 'Full front', 12, 14, 3], ['upper', 'Upper back', 12, 4, 2.5], ['neck', 'Back neck', 3, 1.5, 1]],
+    tops: [['none', 'None'], ['center', 'Center chest', 10, 12, 3], ['left', 'Left chest', 3.5, 3.5, 7], ['full', 'Full front', 12, 14, 3], ['upper', 'Upper back', 12, 4, 2.5], ['fullback', 'Full back', 12, 14, 3], ['neck', 'Back neck', 3, 1.5, 1]],
     pants: [['none', 'None'], ['leftleg', 'Left leg', 3, 10, 4], ['bpocket', 'Back pocket', 3, 3, 1.5]],
     hats: [['none', 'None'], ['frontc', 'Front center', 2.5, 1.5, 0]],
     bags: [['none', 'None'], ['frontc', 'Front center', 8, 8, 4]]
@@ -2691,17 +2697,12 @@
       tpInput('tpStyle', 'style', nameOf(state.g)); tpInput('tpNum', 'num', 'NC-001'); tpInput('tpSeason', 'season', 'Spring 2027'); tpInput('tpBrand', 'brand', 'Your brand');
       tpInput('tpFabric', 'fabric', FAB[fam][0]); tpInput('tpContent', 'content', FAB[fam][1]); tpInput('tpWeight', 'weight', FAB[fam][2]);
       tpInput('tpColorName', 'colorName'); tpInput('tpNotes', 'notes', 'Anything else: wash, special trims, packing, deadlines.'); tpInput('tpSample', 'sampleName', sampleName());
-      ['printW', 'printH', 'printFrom'].forEach(function (k) { var e = $('tp_' + k); e.value = state.tp[k]; e.oninput = function () { var v = parseFloat(e.value); if (!isNaN(v)) { state.tp[k] = v; saveTP(); renderSoon(); } }; });
       $('tpColor').value = state.tp.color; $('tpColor').oninput = function () { state.tp.color = $('tpColor').value; saveTP(); buildTP(true); renderSoon(); };
     }
     chipsFrom($('tpColors'), SWATCH.map(function (s) { return [s[1], '<span class="swc" style="background:' + s[1] + '"></span>' + s[0]]; }), state.tp.color, function (v) { var s = SWATCH.filter(function (x) { return x[1] === v; })[0]; state.tp.color = v; state.tp.colorName = s[0]; $('tpColor').value = v; $('tpColorName').value = s[0]; saveTP(); buildTP(true); render(); });
     chipsFrom($('tpLabel'), [['woven', 'Woven label'], ['printed', 'Printed, tagless'], ['none', 'None']], state.tp.label, function (v) { state.tp.label = v; saveTP(); buildTP(true); render(); });
     chipsFrom($('tpCare'), [['side', 'Left side seam'], ['neck', fam === 'pants' ? 'Back waistband' : 'Back neck']], state.tp.care, function (v) { state.tp.care = v; saveTP(); buildTP(true); render(); });
-    var pl = PRINTS[fam]; if (!pl.some(function (p) { return p[0] === state.tp.print; })) state.tp.print = 'none';
-    chipsFrom($('tpPrint'), pl.map(function (x) { return [x[0], x[1]]; }), state.tp.print, function (v) { var p = pl.filter(function (x) { return x[0] === v; })[0]; state.tp.print = v; if (p[2]) { state.tp.printW = p[2]; state.tp.printH = p[3]; state.tp.printFrom = fam === 'hats' ? Math.max(0.5, Math.round((current.res.spec.crown - (current.res.spec.cuff || 0) + 1) * 4) / 4) : p[4]; } saveTP(); buildTP(); render(); });
-    $('tpPrintBox').hidden = state.tp.print === 'none';
-    $('tpFromLabel').textContent = fam === 'tops' ? (state.tp.print === 'neck' ? 'Below the back neck seam' : 'Below the high point shoulder') : fam === 'pants' ? (state.tp.print === 'bpocket' ? 'Below the top of the pocket' : 'Below the waistband') : fam === 'hats' ? 'Below the top of the crown' : 'Below the top edge';
-    chipsFrom($('tpMethod'), [['screen', 'Screen print'], ['emb', 'Embroidery'], ['dtg', 'DTG'], ['dtf', 'DTF']], state.tp.method, function (v) { state.tp.method = v; saveTP(); buildTP(true); });
+    buildPlaces();
     // tolerances
     if (current) {
       var list = poms(current.res.spec, flatGeo(current.res.spec)), box = $('tpTol'); box.innerHTML = '';
@@ -2715,9 +2716,59 @@
       });
     }
   }
-  $('tpArt').addEventListener('change', function (e) {
-    var f = e.target.files[0]; e.target.value = ''; if (!f) return;
-    window.nocivCrop(f, { title: 'Crop your artwork', aspects: [['free', 'Free'], ['orig', 'Original'], [1, 'Square'], [4 / 5, '4:5'], [3 / 2, '3:2']], maxPx: 2000 }).then(function (c) { if (!c) return; tpArt = c.toDataURL('image/png'); $('tpArtName').textContent = f.name; render(); });
+  // ---------- placements: each spot that gets print or embroidery ----------
+  var MAX_PLACES = 4;
+  function fromLabel(fam, print) { return fam === 'tops' ? (print === 'neck' ? 'Below the back neck seam' : 'Below the high point shoulder') : fam === 'pants' ? (print === 'bpocket' ? 'Below the top of the pocket' : 'Below the waistband') : fam === 'hats' ? 'Below the top of the crown' : 'Below the top edge'; }
+  function buildPlaces() {
+    var fam = famOf(state.g), list = PRINTS[fam], box = $('tpPlaces'); box.innerHTML = '';
+    state.tp.places.forEach(function (pl) { if (!list.some(function (x) { return x[0] === pl.print; })) pl.print = 'none'; });
+    state.tp.places.forEach(function (pl, i) {
+      var wrap = document.createElement('div'); wrap.className = 'tpplace'; wrap.style.cssText = 'border-top:2px solid #1a1a1a;padding-top:10px;margin-top:12px';
+      var head = document.createElement('div'); head.style.cssText = 'display:flex;justify-content:space-between;align-items:center;gap:8px';
+      head.innerHTML = '<b>Placement ' + (i + 1) + '</b>'; 
+      if (state.tp.places.length > 1) { var rm = document.createElement('button'); rm.type = 'button'; rm.className = 'chip'; rm.textContent = 'Remove'; rm.onclick = function () { state.tp.places.splice(i, 1); tpArts.splice(i, 1); saveTP(); buildPlaces(); render(); }; head.appendChild(rm); }
+      wrap.appendChild(head);
+      var chips = document.createElement('div'); chips.className = 'chips'; wrap.appendChild(chips);
+      chipsFrom(chips, list.map(function (x) { return [x[0], x[1]]; }), pl.print, function (v) {
+        var p = list.filter(function (x) { return x[0] === v; })[0]; pl.print = v;
+        if (p[2]) { pl.printW = p[2]; pl.printH = p[3]; pl.printFrom = fam === 'hats' ? Math.max(0.5, Math.round((current.res.spec.crown - (current.res.spec.cuff || 0) + 1) * 4) / 4) : p[4]; }
+        saveTP(); buildPlaces(); render();
+      });
+      if (pl.print !== 'none') {
+        var f = document.createElement('div'); f.className = 'fields three'; f.style.marginTop = '10px';
+        [['printW', 'Width'], ['printH', 'Height'], ['printFrom', fromLabel(fam, pl.print)]].forEach(function (k) {
+          var d = document.createElement('div'); d.className = 'field'; d.innerHTML = '<label></label><div class="row"><input type="number" inputmode="decimal" step="0.25"><span class="unit">in</span></div>';
+          d.querySelector('label').textContent = k[1]; var e = d.querySelector('input'); e.value = pl[k[0]];
+          e.oninput = function () { var v = parseFloat(e.value); if (!isNaN(v)) { pl[k[0]] = v; saveTP(); renderSoon(); } };
+          f.appendChild(d);
+        });
+        wrap.appendChild(f);
+        var mg = document.createElement('div'); mg.className = 'group-name'; mg.textContent = 'Method'; wrap.appendChild(mg);
+        var mc = document.createElement('div'); mc.className = 'chips'; wrap.appendChild(mc);
+        chipsFrom(mc, [['screen', 'Screen print'], ['emb', 'Embroidery'], ['dtg', 'DTG'], ['dtf', 'DTF']], pl.method, function (v) { pl.method = v; saveTP(); buildPlaces(); });
+        var lab = document.createElement('label'); lab.className = 'filebtn'; lab.textContent = tpArts[i] ? 'Change artwork' : 'Add your artwork (optional)';
+        var inp = document.createElement('input'); inp.type = 'file'; inp.accept = 'image/*'; inp.className = 'hidefile'; lab.appendChild(inp);
+        var nm = document.createElement('span'); nm.className = 'meta'; nm.textContent = tpArts[i] ? 'Artwork added. It shows on the flats and the placement page.' : 'Shows on the flats and the placement page.';
+        inp.addEventListener('change', function (e) {
+          var file = e.target.files[0]; e.target.value = ''; if (!file) return;
+          window.nocivCrop(file, { title: 'Crop your artwork', aspects: [['free', 'Free'], ['orig', 'Original'], [1, 'Square'], [4 / 5, '4:5'], [3 / 2, '3:2']], maxPx: 2000 }).then(function (c) { if (!c) return; tpArts[i] = c.toDataURL('image/png'); nm.textContent = file.name; lab.firstChild.nodeValue = 'Change artwork'; render(); });
+        });
+        wrap.appendChild(lab); wrap.appendChild(nm);
+      }
+      box.appendChild(wrap);
+    });
+    $('tpAddPlace').hidden = state.tp.places.length >= MAX_PLACES;
+    $('tpAddPlace').textContent = state.tp.places.length >= 1 && state.tp.places[0].print === 'none' ? '+ Add another placement' : '+ Add another placement (back, left chest...)';
+  }
+  $('tpAddPlace').addEventListener('click', function () {
+    if (state.tp.places.length >= MAX_PLACES) return;
+    var fam = famOf(state.g), list = PRINTS[fam], first = state.tp.places.map(function (p) { return p.print; });
+    // suggest the first spot not used yet, back first for tops so the back is not forgotten
+    var pref = fam === 'tops' ? ['upper', 'center', 'left', 'full', 'fullback', 'neck'] : list.map(function (x) { return x[0]; }).filter(function (x) { return x !== 'none'; });
+    var pick = pref.filter(function (v) { return first.indexOf(v) < 0 && list.some(function (x) { return x[0] === v; }); })[0] || 'none';
+    var p = list.filter(function (x) { return x[0] === pick; })[0], np = { print: pick, printW: p && p[2] || 10, printH: p && p[3] || 12, printFrom: p && p[4] != null ? p[4] : 3, method: state.tp.places[0].method || 'screen' };
+    if (fam === 'hats' && p && p[2]) np.printFrom = Math.max(0.5, Math.round((current.res.spec.crown - (current.res.spec.cuff || 0) + 1) * 4) / 4);
+    state.tp.places.push(np); saveTP(); buildPlaces(); render();
   });
 
   // =====================================================================
