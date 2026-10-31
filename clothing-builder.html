@@ -321,8 +321,17 @@
       <div id="garments"></div>
     </section>
 
+    <section class="note" data-step="Fit">
+      <h2><b>2</b> Fit and details</h2>
+      <div id="fitBox">
+        <div class="group-name">Fit</div>
+        <div class="chips" id="fit"></div>
+      </div>
+      <div id="opts"></div>
+    </section>
+
     <section class="note" data-step="Measure">
-      <h2><b>2</b> Your measurements</h2>
+      <h2><b>3</b> Your measurements</h2>
       <div class="chips" id="units">
         <button type="button" class="chip" data-v="in" aria-pressed="true">Inches</button>
         <button type="button" class="chip" data-v="cm" aria-pressed="false">Centimeters</button>
@@ -332,17 +341,8 @@
         <div class="chips" id="sizes"></div>
       </div>
       <div class="fields" id="fields"></div>
-      <p class="meta">Measure your body with a soft tape, room to move gets added in the next step. Or match a piece you already own: tap "Measure a piece you own" up top.</p>
+      <p class="meta">Measure your body with a soft tape, the room to move you picked in the Fit step gets added to them. Or match a piece you already own: tap "Measure a piece you own" up top.</p>
       <p class="done-note" id="pmDone" hidden></p>
-    </section>
-
-    <section class="note" data-step="Fit">
-      <h2><b>3</b> Fit and details</h2>
-      <div id="fitBox">
-        <div class="group-name">Fit</div>
-        <div class="chips" id="fit"></div>
-      </div>
-      <div id="opts"></div>
     </section>
 
     <section class="note" data-step="Tech pack">
@@ -493,7 +493,7 @@
 <li>Keep the tape level all the way around. Use a mirror, or better, have a friend do it.</li>
 <li>Stand relaxed, feet together, breathe normally. Do not suck in.</li>
 <li>Measure twice. If the two numbers are different, measure a third time.</li>
-<li>Each box in step 2 tells you exactly where that measurement goes.</li>
+<li>Each box in step 3 tells you exactly where that measurement goes.</li>
 </ul>
 <h4>Measuring a garment</h4>
 <svg class="lfig" viewBox="0 0 400 150" role="img" aria-label="A shirt laid flat with a tape across the chest and down the length">
@@ -563,7 +563,7 @@
 <li><b>Darts</b> are folded wedges. Sewing a dart takes out fabric at one end and leaves it at the other, so the fabric cups around the seat, the waist or the chest. Our pants use back darts.</li>
 <li><b>The crotch curve</b> is the deepest curve in clothes. The back curve is longer and deeper than the front because your seat needs more room.</li>
 <li><b>Pleats and gathers</b> fold or scrunch extra fabric into a smaller edge, like a pleat at the waist or elastic in a casing.</li>
-<li><b>Ease</b> is the extra room on top of your body measurements. Fitted, regular, relaxed and baggy in step 3 are different amounts of ease.</li>
+<li><b>Ease</b> is the extra room on top of your body measurements. Fitted, regular, relaxed and baggy in step 2 are different amounts of ease.</li>
 <li><b>Grain</b> is the direction of the threads. The blue arrow on each pattern piece goes parallel to the finished edge of the fabric, so the garment hangs straight and does not twist.</li>
 </ul>
 </article>
@@ -2941,7 +2941,7 @@
     $('pmContrast').onclick = function () { PM.contrast = !PM.contrast; $('pmCanvas').style.filter = PM.contrast ? 'contrast(1.7) saturate(0.4)' : ''; this.setAttribute('aria-pressed', String(PM.contrast)); };
     $('pmFitBtn').onclick = function () { PM.zoom = 1; PM.cx = PM.cy = null; pmFit(); pmDraw(); };
     $('pmPaper').querySelectorAll('[data-v]').forEach(function (b) { b.onclick = function () { PM.paper = b.dataset.v; $('pmPaper').querySelectorAll('[data-v]').forEach(function (o) { o.setAttribute('aria-pressed', String(o === b)); }); if (PM.img) pmDraw(); }; });
-    $('pmUse').onclick = function () { var r = pmCombined().r; if (!r) return; pmApply(r); pmClose(); var msg = $('pmDone'); msg.hidden = false; msg.textContent = 'Done. Your ' + nameOf(state.g).toLowerCase() + ' pattern and tech pack now come out the same size as the piece you measured, with the ' + (famOf(state.g) === 'tops' || famOf(state.g) === 'pants' ? state.fit + ' fit you picked' : 'style you picked') + '. Check one number with a tape measure before you cut fabric.'; if (window.nocivSteps) window.nocivSteps.show(1, true); };
+    $('pmUse').onclick = function () { var r = pmCombined().r; if (!r) return; pmApply(r); pmClose(); var msg = $('pmDone'); msg.hidden = false; msg.textContent = 'Done. Your ' + nameOf(state.g).toLowerCase() + ' pattern and tech pack now come out the same size as the piece you measured, with the ' + (famOf(state.g) === 'tops' || famOf(state.g) === 'pants' ? state.fit + ' fit you picked' : 'style you picked') + '. Check one number with a tape measure before you cut fabric.'; if (window.nocivSteps) window.nocivSteps.show(2, true); };
     window.addEventListener('resize', function () { if (!$('pm').hidden && PM.img) { pmFit(); pmDraw(); } });
   })();
   window.__pm = { PM: PM, combined: pmCombined, switchSide: pmSwitch, results: pmResults, apply: pmApply, H: pmH, map: hmap, draw: function () { pmFit(); pmDraw(); } };
