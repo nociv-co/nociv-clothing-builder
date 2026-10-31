@@ -1795,27 +1795,31 @@
     });
   }
   var viewFam = null;
-  function buildGarments() {
-    var box = $('garments'); box.innerHTML = '';
-    var fam = viewFam || famOf(state.g);
-    var top = document.createElement('div'); top.className = 'fams'; box.appendChild(top);
-    GROUPS.forEach(function (g) {
-      var b = document.createElement('button'); b.type = 'button'; b.textContent = g.name; b.setAttribute('aria-pressed', String(g.id === fam));
-      b.onclick = function () { viewFam = g.id; buildGarments(); }; top.appendChild(b);
-    });
-    var g = GROUPS.filter(function (x) { return x.id === fam; })[0], list = document.createElement('div'); list.className = 'famlist'; box.appendChild(list);
-    g.items.forEach(function (it) {
-      var b = document.createElement('button'); b.type = 'button'; b.setAttribute('aria-pressed', String(it[0] === state.g));
-      b.textContent = it[1]; if (it[2]) { b.disabled = true; b.insertAdjacentHTML('beforeend', '<small>soon</small>'); }
-      b.onclick = function () {
-        var v = it[0], oldFam = famOf(state.g); state.g = v; viewFam = null;
+  function pickGarment(v) {
+    var oldFam = famOf(state.g); state.g = v; viewFam = null;
         if (v === 'tote') { state.m.width = 14; state.m.height = 15; state.m.depth = 4; state.m.strap = 24; }
         if (v === 'minitote') { state.m.width = 10; state.m.height = 10; state.m.depth = 3; state.m.strap = 20; }
         if (v === 'fanny') { state.m.width = 12; state.m.height = 6; state.m.depth = 2.5; state.m.strap = 36; }
         if (v === 'backpack') { state.o.pack = 'reg'; state.o.straps = 2; state.m.width = 10; state.m.height = 16; state.m.strap = 30; }
         if (famOf(v) !== oldFam) state.fit = famOf(v) === 'tops' ? 'regular' : 'relaxed';
         buildAll();
-      };
+  }
+  function buildGarments() {
+    var box = $('garments'); box.innerHTML = '';
+    var fam = viewFam || famOf(state.g);
+    var top = document.createElement('div'); top.className = 'fams'; box.appendChild(top);
+    GROUPS.forEach(function (g) {
+      var b = document.createElement('button'); b.type = 'button'; b.textContent = g.name; b.setAttribute('aria-pressed', String(g.id === fam));
+      b.onclick = function () {
+        if (g.id === famOf(state.g)) { viewFam = null; buildGarments(); return; }
+        var first = g.items.filter(function (x) { return !x[2]; })[0]; if (first) pickGarment(first[0]); else { viewFam = g.id; buildGarments(); }
+      }; top.appendChild(b);
+    });
+    var g = GROUPS.filter(function (x) { return x.id === fam; })[0], list = document.createElement('div'); list.className = 'famlist'; box.appendChild(list);
+    g.items.forEach(function (it) {
+      var b = document.createElement('button'); b.type = 'button'; b.setAttribute('aria-pressed', String(it[0] === state.g));
+      b.textContent = it[1]; if (it[2]) { b.disabled = true; b.insertAdjacentHTML('beforeend', '<small>soon</small>'); }
+      b.onclick = function () { pickGarment(it[0]); };
       list.appendChild(b);
     });
   }
